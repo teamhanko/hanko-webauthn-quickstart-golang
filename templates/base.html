@@ -1,0 +1,100 @@
+{{define "base"}}
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <script src="/assets/hankoWebAuthn.js"></script>
+        <script>
+            const init = {
+                request: "{{.Request}}",
+                requestId: "{{.Id}}"
+            };
+
+            let statusEl; // will be assigned onDocumentReady
+
+            function fetchApiHandler(hankoApiRequest) {
+                fetch("http://localhost:3000/finalize/?requestId=" + init.requestId, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(hankoApiRequest)
+                }).then(response => {
+                    if (response.status === 200) {
+                        response.json().then(resp => {
+                            statusEl.innerText = resp.status
+                        }).catch(error => {
+                            statusEl.innerText = error
+                        })
+                    } else {
+                        statusEl.innerText = response.status + " - " + response.statusText;
+                    }
+                }).catch(error => {
+                    statusEl.innerText = error
+                })
+            }
+
+            function errorHandler(error) {
+                statusEl.innerText = error
+            }
+
+            function webAuthnRegister() {
+                window.hankoWebAuthn.register(init.request, fetchApiHandler, errorHandler)
+            }
+
+            function webAuthnAuthenticate() {
+                window.hankoWebAuthn.authenticate(init.request, fetchApiHandler, errorHandler)
+            }
+
+            function onDocumentReady(func) {
+                if (document.readyState === "complete" || document.readyState === "interactive") {
+                    setTimeout(func, 1);
+                } else {
+                    document.addEventListener("DOMContentLoaded", func);
+                }
+            }
+
+            onDocumentReady(() => {
+                statusEl = document.getElementById("status");
+            })
+        </script>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat:400,500,700,800&display=swap">
+        <link rel="stylesheet" href="/assets/styles.css">
+    </head>
+    <body>
+    <header>
+        <img class="logo" src="/assets/hanko-logo.png"/>
+    </header>
+    <nav>
+        <ul>
+            <li><a href="/register/">Register an Authenticator Device</a></li>
+            <li><a href="/authenticate/">Authenticate with an Authenticator Device</a></li>
+        </ul>
+    </nav>
+    <main>
+        {{template "content" .}}
+    </main>
+    <section>
+        <table>
+            <tr>
+                <th>Request Id:</th>
+                <td>{{.Id}}</td>
+            </tr>
+            <tr>
+                <th>Operation:</th>
+                <td>{{.Operation}}</td>
+            </tr>
+            <tr>
+                <th>Valid Until:</th>
+                <td>{{.ValidUntil}}</td>
+            </tr>
+            <tr>
+                <th>Status:</th>
+                <td id="status">{{.Status}}</td>
+            </tr>
+        </table>
+    </section>
+    <footer>
+        <a href="https://docs.hanko.io/#/quick-start-webauthn">WebAuthn Quickstart Guide</a>
+    </footer>
+    </body>
+    </html>
+{{end}}
