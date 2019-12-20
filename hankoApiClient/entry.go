@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/pkg/errors"
-	"log"
 	"net/http"
 )
 
@@ -132,6 +131,6 @@ func (client *HankoApiClient) Request(method string, path string, request interf
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to decode the response")
 	}
-	log.Printf("response: %+v", apiResp)
+
 	return apiResp, nil
 }

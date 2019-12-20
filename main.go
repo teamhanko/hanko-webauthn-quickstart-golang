@@ -14,28 +14,29 @@ import (
 var apiHost = "https://api.dev.hanko.io/v1"
 var apiSecret = "17a1b9585cc92782d6017324c77887b283427e8076a2e775dbd7570"
 var apiClient = hankoApiClient.NewHankoApiClient(apiHost, apiSecret)
-var userId = "114bb280-ab1a-485d-a922-33f777b25177"
+var userId = "124bb280-ab1a-485d-a922-33f777b25177"
 var userName = "testapp@hanko.io"
 
 type TemplateData struct {
 	Id         string
 	Request    string
 	Status     string
-	Operation  string
+	Operation  hankoApiClient.Operation
 	ValidUntil string
 }
 
 func main() {
 	http.HandleFunc("/", rootHandler)
-	http.HandleFunc("/register/", initRegistrationHandler)
+	http.HandleFunc("/favicon.ico", assetHandler)
 	http.HandleFunc("/authenticate/", initAuthenticationHandler)
+	http.HandleFunc("/register/", initRegistrationHandler)
 	http.HandleFunc("/finalize/", finalizeHandler)
 	http.HandleFunc("/assets/", assetHandler)
 	log.Fatal(http.ListenAndServe(":3000", nil))
 }
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/register", http.StatusMovedPermanently)
+	http.Redirect(w, r, "/register", http.StatusFound)
 }
 
 func initRegistrationHandler(w http.ResponseWriter, r *http.Request) {
@@ -61,7 +62,7 @@ func initHandler(w http.ResponseWriter, r *http.Request, operation hankoApiClien
 		Id:         apiResp.Id,
 		Request:    apiResp.Request,
 		Status:     apiResp.Status,
-		Operation:  string(apiResp.Operation),
+		Operation:  apiResp.Operation,
 		ValidUntil: apiResp.ValidUntil,
 	})
 }
