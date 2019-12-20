@@ -14,7 +14,7 @@ import (
 var apiHost = "https://api.dev.hanko.io/v1"
 var apiSecret = "17a1b9585cc92782d6017324c77887b283427e8076a2e775dbd7570"
 var apiClient = hankoApiClient.NewHankoApiClient(apiHost, apiSecret)
-var userId = "124bb280-ab1a-485d-a922-33f777b25177"
+var userId = "114bb230-ab1a-484d-a922-33f777b12117"
 var userName = "testapp@hanko.io"
 
 type TemplateData struct {
@@ -28,8 +28,9 @@ type TemplateData struct {
 func main() {
 	http.HandleFunc("/", rootHandler)
 	http.HandleFunc("/favicon.ico", assetHandler)
-	http.HandleFunc("/authenticate/", initAuthenticationHandler)
-	http.HandleFunc("/register/", initRegistrationHandler)
+	http.HandleFunc("/authenticate/", beginAuthenticationHandler)
+	http.HandleFunc("/register/", beginRegistrationHandler)
+	http.HandleFunc("/deregister/", deregHandler)
 	http.HandleFunc("/finalize/", finalizeHandler)
 	http.HandleFunc("/assets/", assetHandler)
 	log.Fatal(http.ListenAndServe(":3000", nil))
@@ -39,12 +40,16 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/register", http.StatusFound)
 }
 
-func initRegistrationHandler(w http.ResponseWriter, r *http.Request) {
+func beginRegistrationHandler(w http.ResponseWriter, r *http.Request) {
 	initHandler(w, r, hankoApiClient.REG, "register")
 }
 
-func initAuthenticationHandler(w http.ResponseWriter, r *http.Request) {
+func beginAuthenticationHandler(w http.ResponseWriter, r *http.Request) {
 	initHandler(w, r, hankoApiClient.AUTH, "authenticate")
+}
+
+func deregHandler(w http.ResponseWriter, r *http.Request) {
+	initHandler(w, r, hankoApiClient.DEREG, "dereg")
 }
 
 func initHandler(w http.ResponseWriter, r *http.Request, operation hankoApiClient.Operation, template string) {
