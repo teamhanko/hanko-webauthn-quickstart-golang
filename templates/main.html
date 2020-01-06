@@ -50,12 +50,11 @@
                     body: JSON.stringify(request)
                 }).then(response => {
                     if (response.status === 200) {
-                        response.json().then(json => _bakeStatusTable(json))
-                            .catch(error => _handleError(error))
+                        response.json().then(json => _bakeStatusTable(json)).catch(error => _handleError(error))
                     } else {
                         _handleError(response.status + " - " + response.statusText)
                     }
-                }).catch(error => requestData.statusEl.innerText = error)
+                }).catch(error => _handleError(error))
             }
 
             function beginRegistration() {
