@@ -63,10 +63,19 @@ table {
 
 table th {
     text-align: right;
+    width: 90px;
 }
 
 table td {
     text-align: left;
+}
+
+section {
+    margin: 20px;
+}
+
+section#error_message {
+    color: #EA5149;
 }
 
 main {

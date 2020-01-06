@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"gitlab.com/hanko/hanko-test-app/hankoApiClient"
 	"html/template"
@@ -14,7 +15,7 @@ import (
 var apiHost = "https://api.dev.hanko.io/v1"
 var apiSecret = "17a1b9585cc92782d6017324c77887b283427e8076a2e775dbd7570"
 var apiClient = hankoApiClient.NewHankoApiClient(apiHost, apiSecret)
-var userId = "114bb230-ab1a-484d-a922-33f777b12117"
+var userId = uuid.New()
 var userName = "testapp@hanko.io"
 
 type TemplateData struct {
@@ -27,32 +28,47 @@ type TemplateData struct {
 
 func main() {
 	http.HandleFunc("/", rootHandler)
-	http.HandleFunc("/favicon.ico", assetHandler)
-	http.HandleFunc("/authenticate/", beginAuthenticationHandler)
-	http.HandleFunc("/register/", beginRegistrationHandler)
-	http.HandleFunc("/deregister/", deregHandler)
-	http.HandleFunc("/finalize/", finalizeHandler)
 	http.HandleFunc("/assets/", assetHandler)
+	http.HandleFunc("/favicon.ico", assetHandler)
+	http.HandleFunc("/show_authentication/", showAuthenticationPage)
+	http.HandleFunc("/show_registration/", showRegistrationPage)
+	http.HandleFunc("/show_deregistration/", showDeRegistrationPage)
+	http.HandleFunc("/begin_authentication/", beginAuthentication)
+	http.HandleFunc("/begin_registration/", beginRegistration)
+	http.HandleFunc("/begin_deregistration/", beginDeRegistration)
+	http.HandleFunc("/finalize/", hankoApiFinalize)
 	log.Fatal(http.ListenAndServe(":3000", nil))
 }
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/register", http.StatusFound)
+	http.Redirect(w, r, "/show_registration", http.StatusFound)
 }
 
-func beginRegistrationHandler(w http.ResponseWriter, r *http.Request) {
-	initHandler(w, r, hankoApiClient.REG, "register")
+func showAuthenticationPage(w http.ResponseWriter, r *http.Request) {
+	renderTemplate(w, "authentication.html", &TemplateData{})
 }
 
-func beginAuthenticationHandler(w http.ResponseWriter, r *http.Request) {
-	initHandler(w, r, hankoApiClient.AUTH, "authenticate")
+func showRegistrationPage(w http.ResponseWriter, r *http.Request) {
+	renderTemplate(w, "registration.html", &TemplateData{})
 }
 
-func deregHandler(w http.ResponseWriter, r *http.Request) {
-	initHandler(w, r, hankoApiClient.DEREG, "dereg")
+func showDeRegistrationPage(w http.ResponseWriter, r *http.Request) {
+	renderTemplate(w, "deregistration.html", &TemplateData{})
 }
 
-func initHandler(w http.ResponseWriter, r *http.Request, operation hankoApiClient.Operation, template string) {
+func beginRegistration(w http.ResponseWriter, r *http.Request) {
+	hankoApiBegin(w, r, hankoApiClient.REG)
+}
+
+func beginAuthentication(w http.ResponseWriter, r *http.Request) {
+	hankoApiBegin(w, r, hankoApiClient.AUTH)
+}
+
+func beginDeRegistration(w http.ResponseWriter, r *http.Request) {
+	hankoApiBegin(w, r, hankoApiClient.DEREG)
+}
+
+func hankoApiBegin(w http.ResponseWriter, r *http.Request, operation hankoApiClient.Operation) {
 	apiResp, err := apiClient.Request(http.MethodPost, "/webauthn/requests", &hankoApiClient.Request{
 		Operation: operation,
 		Username:  userName,
@@ -63,7 +79,7 @@ func initHandler(w http.ResponseWriter, r *http.Request, operation hankoApiClien
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	renderTemplate(w, template, &TemplateData{
+	renderJson(w, &TemplateData{
 		Id:         apiResp.Id,
 		Request:    apiResp.Request,
 		Status:     apiResp.Status,
@@ -72,7 +88,7 @@ func initHandler(w http.ResponseWriter, r *http.Request, operation hankoApiClien
 	})
 }
 
-func finalizeHandler(w http.ResponseWriter, r *http.Request) {
+func hankoApiFinalize(w http.ResponseWriter, r *http.Request) {
 	requestId := r.URL.Query().Get("requestId")
 	apiReq := hankoApiClient.HankoApiRequest{}
 	dec := json.NewDecoder(r.Body)
@@ -87,7 +103,13 @@ func finalizeHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	respondJson(w, apiResp)
+	renderJson(w, &TemplateData{
+		Id:         apiResp.Id,
+		Request:    apiResp.Request,
+		Status:     apiResp.Status,
+		Operation:  apiResp.Operation,
+		ValidUntil: apiResp.ValidUntil,
+	})
 }
 
 func assetHandler(w http.ResponseWriter, r *http.Request) {
@@ -96,15 +118,15 @@ func assetHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func renderTemplate(w http.ResponseWriter, name string, templateData *TemplateData) {
-	file := fmt.Sprintf("templates/%s.html", name)
-	tmpl, _ := template.ParseFiles(file, "templates/base.html")
-	err := tmpl.ExecuteTemplate(w, "base", templateData)
+	file := fmt.Sprintf("templates/%s", name)
+	tmpl, _ := template.ParseFiles(file, "templates/main.html")
+	err := tmpl.ExecuteTemplate(w, "main", templateData)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-func respondJson(w http.ResponseWriter, response interface{}) {
+func renderJson(w http.ResponseWriter, response interface{}) {
 	js, err := json.Marshal(response)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

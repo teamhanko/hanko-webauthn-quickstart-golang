@@ -1,0 +1,127 @@
+{{define "main"}}
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <script src="/assets/hankoWebAuthn.js"></script>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat:400,500,700,800&display=swap">
+        <script>
+            const requestData = {
+                request: "",
+                requestId: ""
+            };
+
+            function _handleError(error) {
+                document.getElementById("error_message").innerText = error
+            }
+
+            function _bakeStatusTable(data) {
+                document.getElementById("request_id").innerText = data["Id"];
+                document.getElementById("operation").innerText = data["Operation"];
+                document.getElementById("valid_until").innerText = data["ValidUntil"];
+                document.getElementById("status").innerText = data["Status"];
+            }
+
+            function _beginRequest(url) {
+                fetch(url, {
+                    method: 'GET',
+                    headers: {'Content-Type': 'application/json'}
+                }).then(response => {
+                    if (response.status === 200) {
+                        response.json().then(json => {
+                            requestData.requestId = json["Id"];
+                            requestData.request = json["Request"];
+                            _bakeStatusTable(json)
+                        }).catch(error => _handleError(error))
+                    } else {
+                        _handleError(response.status + " - " + response.statusText)
+                    }
+                }).catch(error => _handleError(error))
+            }
+
+            function _finalizeRequest(request) {
+                if (requestData.requestId.length === 0) {
+                    _handleError("request missing");
+                    return
+                }
+                fetch("http://localhost:3000/finalize/?requestId=" + requestData.requestId, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(request)
+                }).then(response => {
+                    if (response.status === 200) {
+                        response.json().then(json => _bakeStatusTable(json))
+                            .catch(error => _handleError(error))
+                    } else {
+                        _handleError(response.status + " - " + response.statusText)
+                    }
+                }).catch(error => requestData.statusEl.innerText = error)
+            }
+
+            function beginRegistration() {
+                _beginRequest("http://localhost:3000/begin_registration/")
+            }
+
+            function beginAuthentication() {
+                _beginRequest("http://localhost:3000/begin_authentication/")
+            }
+
+            function beginDeRegistration() {
+                _beginRequest("http://localhost:3000/begin_deregistration/")
+            }
+
+            function finalizeRegistration() {
+                window.hankoWebAuthn.createCredentials(requestData.request).then(_finalizeRequest).catch(_handleError)
+            }
+
+            function finalizeAuthentication() {
+                window.hankoWebAuthn.getCredentials(requestData.request).then(_finalizeRequest).catch(_handleError)
+            }
+        </script>
+        <link rel="stylesheet" href="/assets/styles.css">
+    </head>
+    <body>
+    <header>
+        <img class="logo" src="/assets/hanko-logo.png"/>
+    </header>
+    <nav>
+        <ul>
+            <li><a href="/show_registration/">Register</a></li>
+            <li><a href="/show_authentication/">Authenticate</a></li>
+            <li><a href="/show_deregistration/">De-Register</a></li>
+        </ul>
+    </nav>
+    <main>
+        <section>
+            {{template "content" .}}
+        </section>
+        <section>
+            <table>
+                <tr>
+                    <th>Request Id:</th>
+                    <td id="request_id"></td>
+                </tr>
+                <tr>
+                    <th>Operation:</th>
+                    <td id="operation"></td>
+                </tr>
+                <tr>
+                    <th>Valid Until:</th>
+                    <td id="valid_until"></td>
+                </tr>
+                <tr>
+                    <th>Status:</th>
+                    <td id="status"></td>
+                </tr>
+            </table>
+        </section>
+        <section id="error_message"></section>
+    </main>
+    <footer>
+        <section>
+            <a href="https://docs.hanko.io/#/quick-start-webauthn">WebAuthn Quickstart Guide</a>
+        </section>
+    </footer>
+    </body>
+    </html>
+{{end}}

@@ -3,6 +3,7 @@ package hankoApiClient
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"net/http"
 )
@@ -28,7 +29,7 @@ type AuthenticatorSelectionCriteria struct {
 type Request struct {
 	Operation                      Operation                       `json:"operation"`
 	Username                       string                          `json:"username"`
-	UserId                         string                          `json:"userId"`
+	UserId                         uuid.UUID                       `json:"userId"`
 	ClientData                     *ClientData                     `json:"clientData"`
 	DeviceIds                      *[]string                       `json:"deviceIds"`
 	AuthenticatorSelectionCriteria *AuthenticatorSelectionCriteria `json:"authenticatorSelectionCriteria"`
@@ -115,7 +116,7 @@ func (client *HankoApiClient) Request(method string, path string, request interf
 
 	req, err := http.NewRequest(method, client.baseUrl+path, buf)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create request %s - %s", method, client.baseUrl+path)
+		return nil, errors.Wrapf(err, "failed to create request %s %s", method, client.baseUrl+path)
 	}
 
 	req.Header.Add("Authorization", "secret "+client.secret)
