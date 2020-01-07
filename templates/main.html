@@ -4,79 +4,11 @@
     <head>
         <meta charset="UTF-8">
         <script src="/assets/hankoWebAuthn.js"></script>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat:400,500,700,800&display=swap">
+        <script src="/assets/yourApp.js"></script>
         <script>
-            const requestData = {
-                request: "",
-                requestId: ""
-            };
-
-            function _handleError(error) {
-                document.getElementById("error_message").innerText = error
-            }
-
-            function _bakeStatusTable(data) {
-                document.getElementById("request_id").innerText = data["Id"];
-                document.getElementById("operation").innerText = data["Operation"];
-                document.getElementById("valid_until").innerText = data["ValidUntil"];
-                document.getElementById("status").innerText = data["Status"];
-            }
-
-            function _beginRequest(url) {
-                fetch(url, {
-                    method: 'GET',
-                    headers: {'Content-Type': 'application/json'}
-                }).then(response => {
-                    if (response.status === 200) {
-                        response.json().then(json => {
-                            requestData.requestId = json["Id"];
-                            requestData.request = json["Request"];
-                            _bakeStatusTable(json)
-                        }).catch(error => _handleError(error))
-                    } else {
-                        _handleError(response.status + " - " + response.statusText)
-                    }
-                }).catch(error => _handleError(error))
-            }
-
-            function _finalizeRequest(request) {
-                if (requestData.requestId.length === 0) {
-                    _handleError("request missing");
-                    return
-                }
-                fetch("http://localhost:3000/finalize/?requestId=" + requestData.requestId, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(request)
-                }).then(response => {
-                    if (response.status === 200) {
-                        response.json().then(json => _bakeStatusTable(json)).catch(error => _handleError(error))
-                    } else {
-                        _handleError(response.status + " - " + response.statusText)
-                    }
-                }).catch(error => _handleError(error))
-            }
-
-            function beginRegistration() {
-                _beginRequest("http://localhost:3000/begin_registration/")
-            }
-
-            function beginAuthentication() {
-                _beginRequest("http://localhost:3000/begin_authentication/")
-            }
-
-            function beginDeRegistration() {
-                _beginRequest("http://localhost:3000/begin_deregistration/")
-            }
-
-            function finalizeRegistration() {
-                window.hankoWebAuthn.createCredentials(requestData.request).then(_finalizeRequest).catch(_handleError)
-            }
-
-            function finalizeAuthentication() {
-                window.hankoWebAuthn.getCredentials(requestData.request).then(_finalizeRequest).catch(_handleError)
-            }
+            window.yourApp.run({{.Site}})
         </script>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat:400,500,700,800&display=swap">
         <link rel="stylesheet" href="/assets/styles.css">
     </head>
     <body>
@@ -85,9 +17,9 @@
     </header>
     <nav>
         <ul>
-            <li><a href="/show_registration/">Register</a></li>
-            <li><a href="/show_authentication/">Authenticate</a></li>
-            <li><a href="/show_deregistration/">De-Register</a></li>
+            <li><a href="/show_registration/">Registration</a></li>
+            <li><a href="/show_authentication/">Authentication</a></li>
+            <li><a href="/show_deregistration/">De-Registration</a></li>
         </ul>
     </nav>
     <main>
@@ -115,10 +47,11 @@
             </table>
         </section>
         <section id="error_message"></section>
+        <section>Current UserId: {{.UserId}}</section>
     </main>
     <footer>
         <section>
-            <a href="https://docs.hanko.io/#/quick-start-webauthn">WebAuthn Quickstart Guide</a>
+            <a href="https://docs.hanko.io/#/quickstart/webauthn/quick-start-webauthn">WebAuthn Quick Start Guide</a>
         </section>
     </footer>
     </body>

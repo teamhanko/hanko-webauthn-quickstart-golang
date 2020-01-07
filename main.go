@@ -19,6 +19,11 @@ var userId = uuid.New()
 var userName = "testapp@hanko.io"
 
 type TemplateData struct {
+	Site   string
+	UserId string
+}
+
+type JsonData struct {
 	Id         string
 	Request    string
 	Status     string
@@ -45,15 +50,15 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func showAuthenticationPage(w http.ResponseWriter, r *http.Request) {
-	renderTemplate(w, "authentication.html", &TemplateData{})
+	renderTemplate(w, "authentication")
 }
 
 func showRegistrationPage(w http.ResponseWriter, r *http.Request) {
-	renderTemplate(w, "registration.html", &TemplateData{})
+	renderTemplate(w, "registration")
 }
 
 func showDeRegistrationPage(w http.ResponseWriter, r *http.Request) {
-	renderTemplate(w, "deregistration.html", &TemplateData{})
+	renderTemplate(w, "deregistration")
 }
 
 func beginRegistration(w http.ResponseWriter, r *http.Request) {
@@ -79,7 +84,7 @@ func hankoApiBegin(w http.ResponseWriter, r *http.Request, operation hankoApiCli
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	renderJson(w, &TemplateData{
+	renderJson(w, &JsonData{
 		Id:         apiResp.Id,
 		Request:    apiResp.Request,
 		Status:     apiResp.Status,
@@ -103,7 +108,7 @@ func hankoApiFinalize(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	renderJson(w, &TemplateData{
+	renderJson(w, &JsonData{
 		Id:         apiResp.Id,
 		Request:    apiResp.Request,
 		Status:     apiResp.Status,
@@ -117,10 +122,13 @@ func assetHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, path.Join("assets", file))
 }
 
-func renderTemplate(w http.ResponseWriter, name string, templateData *TemplateData) {
-	file := fmt.Sprintf("templates/%s", name)
+func renderTemplate(w http.ResponseWriter, site string) {
+	file := fmt.Sprintf("templates/%s.html", site)
 	tmpl, _ := template.ParseFiles(file, "templates/main.html")
-	err := tmpl.ExecuteTemplate(w, "main", templateData)
+	err := tmpl.ExecuteTemplate(w, "main", &TemplateData{
+		Site:   site,
+		UserId: userId.String(),
+	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
