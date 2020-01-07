@@ -19,7 +19,6 @@ var userId = uuid.New()
 var userName = "testapp@hanko.io"
 
 type TemplateData struct {
-	Site   string
 	UserId string
 }
 
@@ -126,7 +125,6 @@ func renderTemplate(w http.ResponseWriter, site string) {
 	file := fmt.Sprintf("templates/%s.html", site)
 	tmpl, _ := template.ParseFiles(file, "templates/main.html")
 	err := tmpl.ExecuteTemplate(w, "main", &TemplateData{
-		Site:   site,
 		UserId: userId.String(),
 	})
 	if err != nil {
