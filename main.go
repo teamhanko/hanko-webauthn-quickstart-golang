@@ -37,7 +37,7 @@ func main() {
 	http.HandleFunc("/begin_authentication/", beginAuthentication)
 	http.HandleFunc("/begin_registration/", beginRegistration)
 	http.HandleFunc("/begin_deregistration/", beginDeRegistration)
-	http.HandleFunc("/finalization/", hankoApiFinalize)
+	http.HandleFunc("/finalization/", finalize)
 
 	// server start
 	log.Fatal(http.ListenAndServe(":3000", nil))
@@ -85,7 +85,7 @@ func hankoApiBegin(w http.ResponseWriter, r *http.Request, operation hankoApiCli
 	renderJson(w, apiResp)
 }
 
-func hankoApiFinalize(w http.ResponseWriter, r *http.Request) {
+func finalize(w http.ResponseWriter, r *http.Request) {
 	requestId := r.URL.Query().Get("requestId")
 	apiReq := hankoApiClient.HankoCredentialRequest{}
 	dec := json.NewDecoder(r.Body)

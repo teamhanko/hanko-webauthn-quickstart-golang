@@ -1,9 +1,9 @@
 (function (win) {
     win.hankoWebAuthn = {
 
-        createCredentials: (publicKeyOptions) => new Promise(
+        createCredentials: (createOptionsString) => new Promise(
             (resolve, reject) => {
-                const creationOptions = {
+                const opts = {
                     rp: {},               // required
                     user: {},             // required
                     challenge: undefined, // required
@@ -17,24 +17,29 @@
                     },
                     attestation: "none",
                     extensions: {}
-                }, options = JSON.parse(publicKeyOptions);
-                creationOptions.rp = options.rp;
-                creationOptions.user = options.user;
-                creationOptions.user.id = win.hankoWebAuthn._encode(options.user.id);
-                creationOptions.challenge = win.hankoWebAuthn._encode(options.challenge);
-                creationOptions.pubKeyCredParams = options.pubKeyCredParams;
-                creationOptions.timeout = options.timeout || creationOptions.timeout;
-                if (options.hasOwnProperty("excludeCredentials")) {
-                    options.excludeCredentials.forEach((publicKeyCredential) => {
+                }, createOptions = JSON.parse(createOptionsString);
+
+                opts.rp = createOptions.rp;
+                opts.user = createOptions.user;
+                opts.user.id = win.hankoWebAuthn._encode(createOptions.user.id);
+                opts.challenge = win.hankoWebAuthn._encode(createOptions.challenge);
+                opts.pubKeyCredParams = createOptions.pubKeyCredParams;
+                opts.timeout = createOptions.timeout || opts.timeout;
+
+                if (createOptions.hasOwnProperty("excludeCredentials")) {
+                    createOptions.excludeCredentials.forEach((publicKeyCredential) => {
                         publicKeyCredential.id = win.hankoWebAuthn._encode(publicKeyCredential.id);
-                        creationOptions.excludeCredentials.push(publicKeyCredential);
+                        opts.excludeCredentials.push(publicKeyCredential);
                     });
                 }
-                creationOptions.attestation = options.attestation || creationOptions.attestation;
-                if (options.hasOwnProperty("extensions")) {
-                    creationOptions.extensions = options.extensions;
+
+                opts.attestation = createOptions.attestation || opts.attestation;
+
+                if (createOptions.hasOwnProperty("extensions")) {
+                    opts.extensions = createOptions.extensions;
                 }
-                navigator.credentials.create({publicKey: creationOptions})
+
+                navigator.credentials.create({publicKey: opts})
                     .then(response => {
                         const resp = response.response, assertion = {
                             clientDataJSON: win.hankoWebAuthn._decode(resp.clientDataJSON),
@@ -46,29 +51,33 @@
             }
         ),
 
-        getCredentials: (publicKeyOptions) => new Promise(
+        getCredentials: (requestOptionsString) => new Promise(
             (resolve, reject) => {
-                const requestOptions = {
+                const opts = {
                     challenge: undefined, // required
                     timeout: 9000,
                     rpId: undefined,
                     allowCredentials: [],
                     userVerification: "preferred",
                     extensions: {}
-                }, options = JSON.parse(publicKeyOptions);
-                requestOptions.challenge = win.hankoWebAuthn._encode(options.challenge);
-                requestOptions.timeout = options.timeout || requestOptions.timeout;
-                requestOptions.rpId = options.rpId;
-                if (options.hasOwnProperty("allowCredentials")) {
-                    options.allowCredentials.forEach((publicKeyCredential) => {
+                }, requestOptions = JSON.parse(requestOptionsString);
+
+                opts.challenge = win.hankoWebAuthn._encode(requestOptions.challenge);
+                opts.timeout = requestOptions.timeout || opts.timeout;
+                opts.rpId = requestOptions.rpId;
+
+                if (requestOptions.hasOwnProperty("allowCredentials")) {
+                    requestOptions.allowCredentials.forEach((publicKeyCredential) => {
                         publicKeyCredential.id = win.hankoWebAuthn._encode(publicKeyCredential.id);
-                        requestOptions.allowCredentials.push(publicKeyCredential);
+                        opts.allowCredentials.push(publicKeyCredential);
                     });
                 }
-                if (options.hasOwnProperty("extensions")) {
-                    requestOptions.extensions = options.extensions;
+
+                if (requestOptions.hasOwnProperty("extensions")) {
+                    opts.extensions = requestOptions.extensions;
                 }
-                navigator.credentials.get({publicKey: requestOptions})
+
+                navigator.credentials.get({publicKey: opts})
                     .then(response => {
                         const resp = response.response, assertion = {
                             clientDataJSON: win.hankoWebAuthn._decode(resp.clientDataJSON),
