@@ -23,7 +23,7 @@ type TemplateData struct {
 	UserId string
 }
 
-type JsonData struct {
+type JsonResponse struct {
 	Id         string
 	Request    string
 	Status     string
@@ -84,7 +84,7 @@ func hankoApiBegin(w http.ResponseWriter, r *http.Request, operation hankoApiCli
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	renderJson(w, &JsonData{
+	renderJson(w, &JsonResponse{
 		Id:         apiResp.Id,
 		Request:    apiResp.Request,
 		Status:     apiResp.Status,
@@ -108,7 +108,7 @@ func hankoApiFinalize(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	renderJson(w, &JsonData{
+	renderJson(w, &JsonResponse{
 		Id:         apiResp.Id,
 		Request:    apiResp.Request,
 		Status:     apiResp.Status,

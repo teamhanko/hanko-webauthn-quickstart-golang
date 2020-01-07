@@ -1,12 +1,16 @@
 (function (win) {
     win.yourApp = {
-        requestData: { request: "", requestId: ""},
+        hankoResponse: {id: undefined, request: undefined},
         run: site => win.yourApp._onDocumentReady(() => win.yourApp._bindEvents(site)),
         beginRegistration: () => win.yourApp._beginRequest("http://localhost:3000/begin_registration/"),
         beginAuthentication: () => win.yourApp._beginRequest("http://localhost:3000/begin_authentication/"),
         beginDeRegistration: () => win.yourApp._beginRequest("http://localhost:3000/begin_deregistration/"),
-        finalizeRegistration: () => win.hankoWebAuthn.createCredentials(win.yourApp.requestData.request).then(win.yourApp._finalizeRequest).catch(win.yourApp._showError),
-        finalizeAuthentication: () => win.hankoWebAuthn.getCredentials(win.yourApp.requestData.request).then(win.yourApp._finalizeRequest).catch(win.yourApp._showError),
+        finalizeRegistration: () => win.hankoWebAuthn.createCredentials(win.yourApp.hankoResponse.request)
+            .then(win.yourApp._finalizeRequest)
+            .catch(win.yourApp._showError),
+        finalizeAuthentication: () => win.hankoWebAuthn.getCredentials(win.yourApp.hankoResponse.request)
+            .then(win.yourApp._finalizeRequest)
+            .catch(win.yourApp._showError),
         _bindEvents: site => {
             if (site === "registration") {
                 win.yourApp._bindEvent("beginRegistration-button", win.yourApp.beginRegistration);
@@ -26,15 +30,23 @@
             document.getElementById("valid_until").innerText = data["ValidUntil"];
             document.getElementById("status").innerText = data["Status"];
         },
+        _reset: () => {
+            document.getElementById("request_id").innerText = "";
+            document.getElementById("operation").innerText = "";
+            document.getElementById("valid_until").innerText = "";
+            document.getElementById("status").innerText = "";
+            document.getElementById("error_message").innerText = "";
+        },
         _beginRequest: url => {
+            win.yourApp._reset();
             fetch(url, {
                 method: 'GET',
                 headers: {'Content-Type': 'application/json'}
             }).then(response => {
                 if (response.status === 200) {
                     response.json().then(json => {
-                        win.yourApp.requestData.requestId = json["Id"];
-                        win.yourApp.requestData.request = json["Request"];
+                        win.yourApp.hankoResponse.id = json["Id"];
+                        win.yourApp.hankoResponse.request = json["Request"];
                         win.yourApp._showApiResponse(json)
                     }).catch(win.yourApp._showError)
                 } else {
@@ -43,11 +55,8 @@
             }).catch(win.yourApp._showError)
         },
         _finalizeRequest: request => {
-            if (win.yourApp.requestData.requestId.length === 0) {
-                win.yourApp._showError("request missing");
-                return
-            }
-            fetch("http://localhost:3000/finalize/?requestId=" + win.yourApp.requestData.requestId, {
+            win.yourApp._reset();
+            fetch("http://localhost:3000/finalize/?requestId=" + win.yourApp.hankoResponse.id, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(request)

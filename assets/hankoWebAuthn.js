@@ -4,6 +4,10 @@
         getCredentials: (request) => win.hankoWebAuthn._callNavigatorCredentials(request, true),
         _callNavigatorCredentials: (requestRaw, authenticate) => new Promise(
             (resolve, reject) => {
+                if (typeof requestRaw === 'undefined') {
+                    reject("hanko request missing");
+                    return
+                }
                 const request = JSON.parse(requestRaw);
                 navigator.credentials[authenticate ? "get" : "create"]({publicKey: win.hankoWebAuthn._convertApiRequest(request, authenticate)})
                     .then(response => resolve(win.hankoWebAuthn._convertApiResponse(response, authenticate))).catch(reject)
