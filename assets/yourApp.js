@@ -1,6 +1,7 @@
 (function (win) {
     win.yourApp = {
         hankoResponse: {id: undefined, request: undefined},
+        elements: {},
         run: site => win.yourApp._onDocumentReady(() => win.yourApp._bindEvents(site)),
         beginRegistration: () => win.yourApp._beginRequest("http://localhost:3000/begin_registration/"),
         beginAuthentication: () => win.yourApp._beginRequest("http://localhost:3000/begin_authentication/"),
@@ -13,29 +14,29 @@
             .catch(win.yourApp._showError),
         _bindEvents: site => {
             if (site === "registration") {
-                win.yourApp._bindEvent("beginRegistration-button", win.yourApp.beginRegistration);
-                win.yourApp._bindEvent("finalizeRegistration-button", win.yourApp.finalizeRegistration);
+                win.yourApp._bindEvent("begin_registration-button", win.yourApp.beginRegistration);
+                win.yourApp._bindEvent("finalize_registration-button", win.yourApp.finalizeRegistration);
             } else if (site === "authentication") {
-                win.yourApp._bindEvent("beginAuthentication-button", win.yourApp.beginAuthentication);
-                win.yourApp._bindEvent("finalizeAuthentication-button", win.yourApp.finalizeAuthentication);
+                win.yourApp._bindEvent("begin_authentication-button", win.yourApp.beginAuthentication);
+                win.yourApp._bindEvent("finalize_authentication-button", win.yourApp.finalizeAuthentication);
             } else if (site === "deregistration") {
-                win.yourApp._bindEvent("beginDeRegistration-button", win.yourApp.beginDeRegistration);
+                win.yourApp._bindEvent("begin_de_registration-button", win.yourApp.beginDeRegistration);
             }
         },
         _bindEvent: (elementId, fn) => document.getElementById(elementId).addEventListener("click", fn),
-        _showError: error => document.getElementById("error_message").innerText = error,
+        _showError: error => document.getElementById("error-text").innerText = error,
         _showApiResponse: data => {
-            document.getElementById("request_id").innerText = data["Id"];
-            document.getElementById("operation").innerText = data["Operation"];
-            document.getElementById("valid_until").innerText = data["ValidUntil"];
-            document.getElementById("status").innerText = data["Status"];
+            document.getElementById("request_id-text").innerText = data["Id"];
+            document.getElementById("operation-text").innerText = data["Operation"];
+            document.getElementById("valid_until-text").innerText = data["ValidUntil"];
+            document.getElementById("status-text").innerText = data["Status"];
         },
         _reset: () => {
-            document.getElementById("request_id").innerText = "";
-            document.getElementById("operation").innerText = "";
-            document.getElementById("valid_until").innerText = "";
-            document.getElementById("status").innerText = "";
-            document.getElementById("error_message").innerText = "";
+            document.getElementById("request_id-text").innerText = "";
+            document.getElementById("operation-text").innerText = "";
+            document.getElementById("valid_until-text").innerText = "";
+            document.getElementById("status-text").innerText = "";
+            document.getElementById("error-text").innerText = "";
         },
         _beginRequest: url => {
             win.yourApp._reset();
