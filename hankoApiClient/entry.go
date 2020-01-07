@@ -87,7 +87,7 @@ type DeviceKeyInfo struct {
 	KeyName string `json:"keyName"`
 }
 
-type HankoApiRequest struct {
+type HankoCredentialRequest struct {
 	WebAuthnResponse PublicKeyCredential `json:"webAuthnResponse"`
 	DeviceKeyInfo    DeviceKeyInfo       `json:"deviceKeyInfo"`
 }

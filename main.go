@@ -22,25 +22,24 @@ type TemplateData struct {
 	UserId string
 }
 
-type JsonResponse struct {
-	Id         string
-	Request    string
-	Status     string
-	Operation  hankoApiClient.Operation
-	ValidUntil string
-}
-
 func main() {
-	http.HandleFunc("/", rootHandler)
+	// serve static content
 	http.HandleFunc("/assets/", assetHandler)
 	http.HandleFunc("/favicon.ico", assetHandler)
+
+	// serve templates
+	http.HandleFunc("/", rootHandler)
 	http.HandleFunc("/show_authentication/", showAuthenticationPage)
 	http.HandleFunc("/show_registration/", showRegistrationPage)
 	http.HandleFunc("/show_deregistration/", showDeRegistrationPage)
+
+	// json endpoints
 	http.HandleFunc("/begin_authentication/", beginAuthentication)
 	http.HandleFunc("/begin_registration/", beginRegistration)
 	http.HandleFunc("/begin_deregistration/", beginDeRegistration)
-	http.HandleFunc("/finalize/", hankoApiFinalize)
+	http.HandleFunc("/finalization/", hankoApiFinalize)
+
+	// server start
 	log.Fatal(http.ListenAndServe(":3000", nil))
 }
 
@@ -83,18 +82,12 @@ func hankoApiBegin(w http.ResponseWriter, r *http.Request, operation hankoApiCli
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	renderJson(w, &JsonResponse{
-		Id:         apiResp.Id,
-		Request:    apiResp.Request,
-		Status:     apiResp.Status,
-		Operation:  apiResp.Operation,
-		ValidUntil: apiResp.ValidUntil,
-	})
+	renderJson(w, apiResp)
 }
 
 func hankoApiFinalize(w http.ResponseWriter, r *http.Request) {
 	requestId := r.URL.Query().Get("requestId")
-	apiReq := hankoApiClient.HankoApiRequest{}
+	apiReq := hankoApiClient.HankoCredentialRequest{}
 	dec := json.NewDecoder(r.Body)
 	err := dec.Decode(&apiReq)
 	if err != nil {
@@ -107,13 +100,7 @@ func hankoApiFinalize(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	renderJson(w, &JsonResponse{
-		Id:         apiResp.Id,
-		Request:    apiResp.Request,
-		Status:     apiResp.Status,
-		Operation:  apiResp.Operation,
-		ValidUntil: apiResp.ValidUntil,
-	})
+	renderJson(w, apiResp)
 }
 
 func assetHandler(w http.ResponseWriter, r *http.Request) {
