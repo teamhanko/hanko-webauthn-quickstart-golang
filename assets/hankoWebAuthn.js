@@ -8,7 +8,7 @@
                     user: {},             // required
                     challenge: undefined, // required
                     pubKeyCredParams: {}, // required
-                    timeout: 30,
+                    timeout: 9000,
                     excludeCredentials: [],
                     authenticatorSelection: {
                         authenticatorAttachment: "platform",
@@ -50,7 +50,7 @@
             (resolve, reject) => {
                 const requestOptions = {
                     challenge: undefined, // required
-                    timeout: 30,
+                    timeout: 9000,
                     rpId: undefined,
                     allowCredentials: [],
                     userVerification: "preferred",
