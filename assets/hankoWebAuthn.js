@@ -1,18 +1,87 @@
 (function (win) {
     win.hankoWebAuthn = {
-        createCredentials: (request) => win.hankoWebAuthn._callNavigatorCredentials(request, false),
-        getCredentials: (request) => win.hankoWebAuthn._callNavigatorCredentials(request, true),
-        _callNavigatorCredentials: (requestRaw, authenticate) => new Promise(
+
+        createCredentials: (publicKeyOptions) => new Promise(
             (resolve, reject) => {
-                if (typeof requestRaw === 'undefined') {
-                    reject("hanko request missing");
-                    return
+                const creationOptions = {
+                    rp: {},               // required
+                    user: {},             // required
+                    challenge: undefined, // required
+                    pubKeyCredParams: {}, // required
+                    timeout: 30,
+                    excludeCredentials: [],
+                    authenticatorSelection: {
+                        authenticatorAttachment: "platform",
+                        requireResidentKey: false,
+                        userVerification: "preferred",
+                    },
+                    attestation: "none",
+                    extensions: {}
+                }, options = JSON.parse(publicKeyOptions);
+                creationOptions.rp = options.rp;
+                creationOptions.user = options.user;
+                creationOptions.user.id = win.hankoWebAuthn._convertToBinary(options.user.id);
+                creationOptions.challenge = win.hankoWebAuthn._convertToBinary(options.challenge);
+                creationOptions.pubKeyCredParams = options.pubKeyCredParams;
+                creationOptions.timeout = options.timeout || creationOptions.timeout;
+                if (options.hasOwnProperty("excludeCredentials")) {
+                    options.excludeCredentials.forEach((publicKeyCredential) => {
+                        publicKeyCredential.id = win.hankoWebAuthn._convertToBinary(publicKeyCredential.id);
+                        creationOptions.excludeCredentials.push(publicKeyCredential);
+                    });
                 }
-                const request = JSON.parse(requestRaw);
-                navigator.credentials[authenticate ? "get" : "create"]({publicKey: win.hankoWebAuthn._convertApiRequest(request, authenticate)})
-                    .then(response => resolve(win.hankoWebAuthn._convertApiResponse(response, authenticate))).catch(reject)
+                creationOptions.attestation = options.attestation || creationOptions.attestation;
+                if (options.hasOwnProperty("extensions")) {
+                    creationOptions.extensions = options.extensions;
+                }
+                navigator.credentials.create({publicKey: creationOptions})
+                    .then(response => {
+                        const resp = response.response, assertion = {
+                            clientDataJSON: win.hankoWebAuthn._arrayBufferToBase64(resp.clientDataJSON),
+                            attestationObject: win.hankoWebAuthn._arrayBufferToBase64(resp.attestationObject)
+                        };
+                        resolve(win.hankoWebAuthn._bakeHankoCredentialRequest(assertion, response))
+                    })
+                    .catch(reject)
             }
         ),
+
+        getCredentials: (publicKeyOptions) => new Promise(
+            (resolve, reject) => {
+                const requestOptions = {
+                    challenge: undefined, // required
+                    timeout: 30,
+                    rpId: undefined,
+                    allowCredentials: [],
+                    userVerification: "preferred",
+                    extensions: {}
+                }, options = JSON.parse(publicKeyOptions);
+                requestOptions.challenge = win.hankoWebAuthn._convertToBinary(options.challenge);
+                requestOptions.timeout = options.timeout || requestOptions.timeout;
+                requestOptions.rpId = options.rpId;
+                if (options.hasOwnProperty("allowCredentials")) {
+                    options.allowCredentials.forEach((publicKeyCredential) => {
+                        publicKeyCredential.id = win.hankoWebAuthn._convertToBinary(publicKeyCredential.id);
+                        requestOptions.allowCredentials.push(publicKeyCredential);
+
+                    });
+                }
+                if (options.hasOwnProperty("extensions")) {
+                    requestOptions.extensions = options.extensions;
+                }
+                navigator.credentials.get({publicKey: requestOptions})
+                    .then(response => {
+                        const resp = response.response, assertion = {
+                            clientDataJSON: win.hankoWebAuthn._arrayBufferToBase64(resp.clientDataJSON),
+                            authenticatorData: win.hankoWebAuthn._arrayBufferToBase64(resp.authenticatorData),
+                            signature: win.hankoWebAuthn._arrayBufferToBase64(resp.signature)
+                        };
+                        resolve(win.hankoWebAuthn._bakeHankoCredentialRequest(assertion, response))
+                    })
+                    .catch(reject)
+            }
+        ),
+
         // convert the base64 to url-safe base64
         _arrayBufferToBase64: buf => {
             const bytes = new Uint8Array(buf), len = bytes.byteLength;
@@ -22,49 +91,15 @@
             }
             return window.btoa(binary).replace(/\//g, '_').replace(/\+/g, '-')
         },
+
         // convert from url-safe base64 to binary
         _convertToBinary: data => Uint8Array.from(window.atob(data.replace(/_/g, '/').replace(/-/g, '+')), v => v.charCodeAt(0)),
-        _convertApiRequest: (request, authenticate) => {
-            // TODO: make it better
-            if (authenticate) {
-                request.userVerification = "preferred";
-            } else {
-                request.authenticatorSelection = {
-                    authenticatorAttachment: "platform",
-                    requireResidentKey: false,
-                    userVerification: "preferred",
-                };
-            }
-            request.challenge = win.hankoWebAuthn._convertToBinary(request.challenge);
-            if (request.hasOwnProperty("user")) {
-                request.user.id = win.hankoWebAuthn._convertToBinary(request.user.id);
-            }
-            if (request.hasOwnProperty("excludeCredentials")) {
-                for (let i = 0; i < request.excludeCredentials.length; i++) {
-                    request.excludeCredentials[i].id = win.hankoWebAuthn._convertToBinary(request.excludeCredentials[i].id)
-                }
-            }
-            if (request.hasOwnProperty("allowCredentials")) {
-                for (let i = 0; i < request.allowCredentials.length; i++) {
-                    request.allowCredentials[i].id = win.hankoWebAuthn._convertToBinary(request.allowCredentials[i].id)
-                }
-            }
-            return request
-        },
-        _convertApiResponse: (response, authenticate) => {
-            // TODO: make it better
-            const fidoResp = response.response, rawId = win.hankoWebAuthn._arrayBufferToBase64(response.rawId),
-                assertion = {clientDataJSON: win.hankoWebAuthn._arrayBufferToBase64(fidoResp.clientDataJSON)};
-            if (authenticate) {
-                assertion.authenticatorData = win.hankoWebAuthn._arrayBufferToBase64(fidoResp.authenticatorData);
-                assertion.signature = win.hankoWebAuthn._arrayBufferToBase64(fidoResp.signature);
-            } else {
-                assertion.attestationObject = win.hankoWebAuthn._arrayBufferToBase64(fidoResp.attestationObject)
-            }
+
+        _bakeHankoCredentialRequest: (assertion, response) => {
             return {
                 webAuthnResponse: {
                     id: response.id,
-                    rawId: rawId,
+                    rawId: win.hankoWebAuthn._arrayBufferToBase64(response.rawId),
                     type: response.type,
                     response: assertion
                 },
