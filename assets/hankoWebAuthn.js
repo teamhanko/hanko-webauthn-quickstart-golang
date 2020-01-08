@@ -11,7 +11,6 @@
                     timeout: 9000,
                     excludeCredentials: [],
                     authenticatorSelection: {
-                        authenticatorAttachment: "platform",
                         requireResidentKey: false,
                         userVerification: "preferred",
                     },
