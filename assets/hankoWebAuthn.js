@@ -3,19 +3,11 @@
 
         createCredentials: (createOptionsString) => new Promise(
             (resolve, reject) => {
-                const defaults = {
-                    timeout: 9000,
-                    authenticatorSelection: {
-                        requireResidentKey: false,
-                        userVerification: "preferred",
-                    },
-                    attestation: "none",
-                }, createOptions = JSON.parse(createOptionsString);
+                const createOptions = JSON.parse(createOptionsString);
 
                 createOptions.user.id = win.hankoWebAuthn._encode(createOptions.user.id);
                 createOptions.challenge = win.hankoWebAuthn._encode(createOptions.challenge);
-                createOptions.timeout = createOptions.timeout || defaults.timeout;
-                createOptions.attestation = createOptions.attestation || defaults.attestation;
+                createOptions.attestation = createOptions.attestation || "none";
 
                 if (createOptions.hasOwnProperty("excludeCredentials")) {
                     createOptions.excludeCredentials.forEach((publicKeyCredential) => {
@@ -44,14 +36,10 @@
 
         getCredentials: (requestOptionsString) => new Promise(
             (resolve, reject) => {
-                const defaults = {
-                    timeout: 9000,
-                    userVerification: "preferred",
-                }, requestOptions = JSON.parse(requestOptionsString);
+                const requestOptions = JSON.parse(requestOptionsString);
 
                 requestOptions.challenge = win.hankoWebAuthn._encode(requestOptions.challenge);
-                requestOptions.timeout = requestOptions.timeout || defaults.timeout;
-                requestOptions.userVerification = defaults.userVerification;
+                requestOptions.userVerification = requestOptions.userVerification || "preferred";
 
                 if (requestOptions.hasOwnProperty("allowCredentials")) {
                     requestOptions.allowCredentials.forEach((publicKeyCredential) => {
