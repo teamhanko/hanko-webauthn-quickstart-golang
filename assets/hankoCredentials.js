@@ -1,10 +1,6 @@
 (function (win) {
     win.hankoCredentials = {
-        /*
-        * @param {{createOptionsString: (string)}=} param1
-        *   num: The number of times to do something.
-        *   str: A string to do stuff to.
-        */
+
         create: (createOptionsString) => new Promise(
             (resolve, reject) => {
                 const createOptions = JSON.parse(createOptionsString);
