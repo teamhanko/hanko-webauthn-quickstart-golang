@@ -3,6 +3,9 @@
 
         create: (createOptionsString) => new Promise(
             (resolve, reject) => {
+                if (typeof createOptionsString === "undefined" || createOptionsString === "")
+                    reject("create options missing");
+
                 const createOptions = JSON.parse(createOptionsString);
 
                 createOptions.user.id = win.hankoCredentials._encode(createOptions.user.id);
@@ -36,6 +39,9 @@
 
         get: (requestOptionsString) => new Promise(
             (resolve, reject) => {
+                if (typeof requestOptionsString === "undefined" || requestOptionsString === "")
+                    reject("request options missing");
+
                 const requestOptions = JSON.parse(requestOptionsString);
 
                 requestOptions.challenge = win.hankoCredentials._encode(requestOptions.challenge);
