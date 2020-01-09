@@ -3,10 +3,15 @@
 
         create: (createOptionsString) => new Promise(
             (resolve, reject) => {
-                if (typeof createOptionsString === "undefined" || createOptionsString === "")
+                let createOptions;
+                if (typeof createOptionsString === "undefined" || createOptionsString === "") {
                     reject("create options missing");
-
-                const createOptions = JSON.parse(createOptionsString);
+                }
+                try {
+                    createOptions = JSON.parse(createOptionsString);
+                } catch (error) {
+                    reject("failed to parse request options:" + error)
+                }
 
                 createOptions.user.id = win.hankoCredentials._encode(createOptions.user.id);
                 createOptions.challenge = win.hankoCredentials._encode(createOptions.challenge);
@@ -39,10 +44,14 @@
 
         get: (requestOptionsString) => new Promise(
             (resolve, reject) => {
+                let requestOptions;
                 if (typeof requestOptionsString === "undefined" || requestOptionsString === "")
                     reject("request options missing");
-
-                const requestOptions = JSON.parse(requestOptionsString);
+                try {
+                    requestOptions = JSON.parse(requestOptionsString);
+                } catch (error) {
+                    reject("failed to parse request options:" + error)
+                }
 
                 requestOptions.challenge = win.hankoCredentials._encode(requestOptions.challenge);
                 requestOptions.userVerification = requestOptions.userVerification || "preferred";

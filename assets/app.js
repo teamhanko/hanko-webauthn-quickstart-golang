@@ -100,7 +100,7 @@
 
         // Sets the hankoApiResponse property and updates the DOM elements
         _setHankoApiResponse: hankoApiResponse => {
-            const elementIdToResponseProperty = {
+            const elementIdToResponseProp = {
                 "request_id-text": "id",
                 "operation-text": "operation",
                 "valid_until-text": "validUntil",
@@ -114,8 +114,8 @@
                     "device first.");
             }
 
-            Object.keys(elementIdToResponseProperty).forEach((elementId) => {
-                win.app.elements[elementId].innerText = hankoApiResponse[elementIdToResponseProperty[elementId]]
+            Object.keys(elementIdToResponseProp).forEach((elementId) => {
+                win.app.elements[elementId].innerText = hankoApiResponse[elementIdToResponseProp[elementId]]
             })
         },
 
