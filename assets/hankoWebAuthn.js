@@ -83,12 +83,12 @@
             const bytes = new Uint8Array(buffer);
             let binary = "";
             bytes.forEach(chr => binary += String.fromCharCode(chr));
-            let str = window.btoa(binary);
+            let str = win.btoa(binary);
             return str.replace(/\//g, '_').replace(/\+/g, '-')
         },
 
         _encode: str => {
-            const dec = window.atob(str.replace(/_/g, '/').replace(/-/g, '+'));
+            const dec = win.atob(str.replace(/_/g, '/').replace(/-/g, '+'));
             return Uint8Array.from(dec, v => v.charCodeAt(0))
         }
 
