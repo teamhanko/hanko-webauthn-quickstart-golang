@@ -1,17 +1,21 @@
 (function (win) {
-    win.hankoWebAuthn = {
-
-        createCredentials: (createOptionsString) => new Promise(
+    win.hankoCredentials = {
+        /*
+        * @param {{createOptionsString: (string)}=} param1
+        *   num: The number of times to do something.
+        *   str: A string to do stuff to.
+        */
+        create: (createOptionsString) => new Promise(
             (resolve, reject) => {
                 const createOptions = JSON.parse(createOptionsString);
 
-                createOptions.user.id = win.hankoWebAuthn._encode(createOptions.user.id);
-                createOptions.challenge = win.hankoWebAuthn._encode(createOptions.challenge);
+                createOptions.user.id = win.hankoCredentials._encode(createOptions.user.id);
+                createOptions.challenge = win.hankoCredentials._encode(createOptions.challenge);
                 createOptions.attestation = createOptions.attestation || "none";
 
                 if (createOptions.hasOwnProperty("excludeCredentials")) {
                     createOptions.excludeCredentials.forEach((publicKeyCredential) => {
-                        publicKeyCredential.id = win.hankoWebAuthn._encode(publicKeyCredential.id);
+                        publicKeyCredential.id = win.hankoCredentials._encode(publicKeyCredential.id);
                     });
                 }
 
@@ -19,11 +23,11 @@
                     resolve({
                         webAuthnResponse: {
                             id: response.id,
-                            rawId: win.hankoWebAuthn._decode(response.rawId),
+                            rawId: win.hankoCredentials._decode(response.rawId),
                             type: response.type,
                             response: {
-                                clientDataJSON: win.hankoWebAuthn._decode(response.response.clientDataJSON),
-                                attestationObject: win.hankoWebAuthn._decode(response.response.attestationObject)
+                                clientDataJSON: win.hankoCredentials._decode(response.response.clientDataJSON),
+                                attestationObject: win.hankoCredentials._decode(response.response.attestationObject)
                             }
                         },
                         deviceKeyInfo: {
@@ -34,16 +38,16 @@
             }
         ),
 
-        getCredentials: (requestOptionsString) => new Promise(
+        get: (requestOptionsString) => new Promise(
             (resolve, reject) => {
                 const requestOptions = JSON.parse(requestOptionsString);
 
-                requestOptions.challenge = win.hankoWebAuthn._encode(requestOptions.challenge);
+                requestOptions.challenge = win.hankoCredentials._encode(requestOptions.challenge);
                 requestOptions.userVerification = requestOptions.userVerification || "preferred";
 
                 if (requestOptions.hasOwnProperty("allowCredentials")) {
                     requestOptions.allowCredentials.forEach((publicKeyCredential) => {
-                        publicKeyCredential.id = win.hankoWebAuthn._encode(publicKeyCredential.id);
+                        publicKeyCredential.id = win.hankoCredentials._encode(publicKeyCredential.id);
                     });
                 }
 
@@ -51,12 +55,12 @@
                     resolve({
                         webAuthnResponse: {
                             id: response.id,
-                            rawId: win.hankoWebAuthn._decode(response.rawId),
+                            rawId: win.hankoCredentials._decode(response.rawId),
                             type: response.type,
                             response: {
-                                clientDataJSON: win.hankoWebAuthn._decode(response.response.clientDataJSON),
-                                authenticatorData: win.hankoWebAuthn._decode(response.response.authenticatorData),
-                                signature: win.hankoWebAuthn._decode(response.response.signature)
+                                clientDataJSON: win.hankoCredentials._decode(response.response.clientDataJSON),
+                                authenticatorData: win.hankoCredentials._decode(response.response.authenticatorData),
+                                signature: win.hankoCredentials._decode(response.response.signature)
                             }
                         },
                         deviceKeyInfo: {

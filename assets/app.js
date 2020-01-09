@@ -1,11 +1,11 @@
-(function (win, hankoWebAuthn) {
+(function (win, hankoCredentials) {
     win.app = {
 
         // Store DOM elements.
         elements: {},
 
         // Store Hanko API response we are getting forwarded from the example API.
-        hankoResponse: {id: undefined, request: undefined},
+        hankoApiResponse: {id: undefined, request: undefined},
 
         // Endpoints of the example API.
         endpoints: {
@@ -14,6 +14,8 @@
             "begin_deregistration": "http://localhost:3000/begin_deregistration/",
             "finalization": "http://localhost:3000/finalization/"
         },
+
+        requestHeader: {"Content-Type": "application/json"},
 
         // Store DOM elements and bind events to the buttons.
         run: () => win.app._onDocumentReady(() => {
@@ -31,26 +33,25 @@
         beginDeRegistrationEvent: () => win.app._beginRequest(win.app.endpoints.begin_deregistration),
 
         // Sign registration request and then fetch the endpoint which finalizes the registration.
-        finalizeRegistrationEvent: () => hankoWebAuthn.createCredentials(win.app.hankoResponse.request)
+        finalizeRegistrationEvent: () => hankoCredentials.create(win.app.hankoApiResponse.request)
             .then(win.app._finalizeRequest)
             .catch(win.app._showError),
 
         // Sign authentication request and then fetch the endpoint which finalizes the authentication.
-        finalizeAuthenticationEvent: () => hankoWebAuthn.getCredentials(win.app.hankoResponse.request)
+        finalizeAuthenticationEvent: () => hankoCredentials.get(win.app.hankoApiResponse.request)
             .then(win.app._finalizeRequest)
             .catch(win.app._showError),
 
         // Fetch the example API, which itself fetches the Hanko API either for a REG, AUTH or DEREG request. The
         // example API forwards the Hanko API Response to the user.
-        _beginRequest: url => {
+        _beginRequest: endpoint => {
             win.app._clearTextElements();
-            fetch(url, {method: "GET", headers: {"Content-Type": "application/json"}})
+            fetch(endpoint, {method: "GET", headers: win.app.requestHeader})
                 .then(response => response.json()
                     .then(json => {
-                        // Store id and request for signing.
-                        win.app.hankoResponse.id = json["id"];
-                        win.app.hankoResponse.request = json["request"];
-                        win.app._showHankoResponse(json)
+                        win.app.hankoApiResponse.id = json.id;
+                        win.app.hankoApiResponse.request = json.request;
+                        win.app._showHankoApiResponse(json)
                     })
                     .catch(win.app._showError))
                 .catch(win.app._showError)
@@ -58,11 +59,11 @@
 
         // Send the signed WebAuthn request to the example API and forwarded it to the Hanko API.
         _finalizeRequest: request => {
-            const url = win.app.endpoints.finalization + "?requestId=" + win.app.hankoResponse.id,
+            const endpoint = win.app.endpoints.finalization + "?requestId=" + win.app.hankoApiResponse.id,
                 body = JSON.stringify(request);
             win.app._clearTextElements();
-            fetch(url, {method: "POST", headers: {"Content-Type": "application/json"}, body: body})
-                .then(response => response.json().then(win.app._showHankoResponse).catch(win.app._showError))
+            fetch(endpoint, {method: "POST", headers: win.app.requestHeader, body: body})
+                .then(response => response.json().then(win.app._showHankoApiResponse).catch(win.app._showError))
                 .catch(win.app._showError)
         },
 
@@ -81,7 +82,7 @@
                 "finalize_authentication-button": win.app.finalizeAuthenticationEvent,
                 "begin_deregistration-button": win.app.beginDeRegistrationEvent
             };
-            Object.keys(map).forEach((key) => win.app._bindClickEvent(key, map[key]))
+            Object.keys(map).forEach((id) => win.app._bindClickEvent(id, map[id]))
         },
 
         // Bind click event to an element if it´s present.
@@ -94,7 +95,7 @@
         _showError: error => win.app.elements["error-text"].innerText = error,
 
         // Give a hankoResponse and fill the status table with content.
-        _showHankoResponse: hankoResponse => {
+        _showHankoApiResponse: hankoResponse => {
             const map = {
                 "request_id-text": "id",
                 "operation-text": "operation",
@@ -117,4 +118,4 @@
             }
         }
     }
-})(window, hankoWebAuthn);
+})(window, hankoCredentials);
