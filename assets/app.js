@@ -1,4 +1,4 @@
-(function (win) {
+(function (win, hankoWebAuthn) {
     win.app = {
 
         // Store DOM elements.
@@ -31,12 +31,12 @@
         beginDeRegistrationEvent: () => win.app._beginRequest(win.app.endpoints.begin_deregistration),
 
         // Sign registration request and then fetch the endpoint which finalizes the registration.
-        finalizeRegistrationEvent: () => win.hankoWebAuthn.createCredentials(win.app.hankoResponse.request)
+        finalizeRegistrationEvent: () => hankoWebAuthn.createCredentials(win.app.hankoResponse.request)
             .then(win.app._finalizeRequest)
             .catch(win.app._showError),
 
         // Sign authentication request and then fetch the endpoint which finalizes the authentication.
-        finalizeAuthenticationEvent: () => win.hankoWebAuthn.getCredentials(win.app.hankoResponse.request)
+        finalizeAuthenticationEvent: () => hankoWebAuthn.getCredentials(win.app.hankoResponse.request)
             .then(win.app._finalizeRequest)
             .catch(win.app._showError),
 
@@ -117,4 +117,4 @@
             }
         }
     }
-})(window);
+})(window, hankoWebAuthn);
