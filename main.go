@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"gitlab.com/hanko/hanko-test-app/hankoApiClient"
+	"github.com/teamhanko/hankoapiclientgo"
 	"html/template"
 	"log"
 	"net/http"
@@ -40,6 +40,7 @@ func main() {
 	http.HandleFunc("/finalization/", finalize)
 
 	// server start
+	log.Println("Starting Server on localhost:3000")
 	log.Fatal(http.ListenAndServe(":3000", nil))
 }
 
@@ -60,25 +61,23 @@ func showDeRegistrationPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func beginRegistration(w http.ResponseWriter, r *http.Request) {
-	hankoApiBegin(w, r, hankoApiClient.REG)
+	apiResp, err := apiClient.InitWebauthnRegistration(userId.String(), userName)
+	handleResponse(w, r, apiResp, err)
 }
 
 func beginAuthentication(w http.ResponseWriter, r *http.Request) {
-	hankoApiBegin(w, r, hankoApiClient.AUTH)
+	apiResp, err := apiClient.InitWebAuthnAuthentication(userId.String(), userName)
+	handleResponse(w, r, apiResp, err)
 }
 
 func beginDeRegistration(w http.ResponseWriter, r *http.Request) {
-	hankoApiBegin(w, r, hankoApiClient.DEREG)
+	apiResp, err := apiClient.InitWebAuthnDeRegistration(userId.String(), userName)
+	handleResponse(w, r, apiResp, err)
 }
 
-func hankoApiBegin(w http.ResponseWriter, r *http.Request, operation hankoApiClient.Operation) {
-	apiResp, err := apiClient.Request(http.MethodPost, "/webauthn/requests", &hankoApiClient.Request{
-		Operation: operation,
-		Username:  userName,
-		UserId:    userId,
-	})
+func handleResponse(w http.ResponseWriter, r *http.Request, apiResp *hankoApiClient.Response, err error) {
 	if err != nil {
-		err = errors.Wrapf(err, "failed to %s: %s (%s)", operation, userId, userName)
+		err = errors.Wrapf(err, "failed to %s: %s (%s)", apiResp.Operation, userId, userName)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -95,7 +94,8 @@ func finalize(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	apiResp, err := apiClient.Request(http.MethodPut, "/webauthn/requests/"+requestId, apiReq)
+
+	apiResp, err := apiClient.FinalizeWebAuthnOperation(requestId,&apiReq)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
