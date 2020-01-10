@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"github.com/teamhanko/hankoapiclientgo"
+	"github.com/teamhanko/hanko-sdk-golang"
 	"html/template"
 	"log"
 	"net/http"
