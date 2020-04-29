@@ -62,22 +62,22 @@ func showDeRegistrationPage(w http.ResponseWriter, r *http.Request) {
 
 func beginRegistration(w http.ResponseWriter, r *http.Request) {
 	apiResp, err := apiClient.InitWebauthnRegistration(userId.String(), userName)
-	handleResponse(w, r, apiResp, err)
+	handleResponse(w, apiResp, err)
 }
 
 func beginAuthentication(w http.ResponseWriter, r *http.Request) {
 	apiResp, err := apiClient.InitWebAuthnAuthentication(userId.String(), userName)
-	handleResponse(w, r, apiResp, err)
+	handleResponse(w, apiResp, err)
 }
 
 func beginDeRegistration(w http.ResponseWriter, r *http.Request) {
 	apiResp, err := apiClient.InitWebAuthnDeRegistration(userId.String(), userName)
-	handleResponse(w, r, apiResp, err)
+	handleResponse(w, apiResp, err)
 }
 
-func handleResponse(w http.ResponseWriter, r *http.Request, apiResp *hankoApiClient.Response, err error) {
+func handleResponse(w http.ResponseWriter, apiResp *hankoApiClient.Response, err error) {
 	if err != nil {
-		err = errors.Wrapf(err, "failed to %s: %s (%s)", apiResp.Operation, userId, userName)
+		err = errors.Wrapf(err, "api call failed - user: %s (%s)", userId, userName)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
