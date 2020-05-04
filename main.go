@@ -12,7 +12,7 @@ import (
 	"path"
 )
 
-var apiHost = "https://api.dev.hanko.io/v1"
+var apiHost = "https://api.dev.hanko.io"
 var apiSecret = "17a1b9585cc92782d6017324c77887b283427e8076a2e775dbd7570"
 var apiClient = hankoApiClient.NewHankoApiClient(apiHost, apiSecret)
 var userId = uuid.New()
