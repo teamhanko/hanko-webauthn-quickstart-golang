@@ -1,0 +1,12 @@
+### Mac ###
+.DS_Store
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+
+### Go build output ###
+hanko-test-app
