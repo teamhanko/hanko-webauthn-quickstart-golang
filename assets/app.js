@@ -1,6 +1,9 @@
 (function (win, hankoWebAuthn) {
     win.app = {
 
+        // Instantiate Hanko WebAuthnClient.
+        hankoWebAuthn: new hankoWebAuthn.HankoWebAuthn(),
+
         // Store DOM elements.
         elements: {},
 
@@ -36,7 +39,7 @@
         // Sign registration request and then fetch the endpoint which finalizes the registration.
         finalizeRegistrationEvent: () => {
             win.app._emptyTextElements();
-            hankoWebAuthn.createCredentials(win.app.hankoApiResponse.request)
+            win.app.hankoWebAuthn.createCredentials(win.app.hankoApiResponse.request)
                 .then(win.app._finalizeRequest)
                 .catch(win.app._showError)
         },
@@ -44,7 +47,7 @@
         // Sign authentication request and then fetch the endpoint which finalizes the authentication.
         finalizeAuthenticationEvent: () => {
             win.app._emptyTextElements();
-            hankoWebAuthn.getCredentials(win.app.hankoApiResponse.request)
+            win.app.hankoWebAuthn.getCredentials(win.app.hankoApiResponse.request)
                 .then(win.app._finalizeRequest)
                 .catch(win.app._showError)
         },
