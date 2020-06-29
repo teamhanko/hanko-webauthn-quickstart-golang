@@ -86,16 +86,20 @@ func handleResponse(w http.ResponseWriter, apiResp *hankoApiClient.Response, err
 
 func finalize(w http.ResponseWriter, r *http.Request) {
 	requestId := r.URL.Query().Get("requestId")
-	apiReq := hankoApiClient.HankoCredentialRequest{}
+	pubKey := hankoApiClient.PublicKeyCredential{}
 	dec := json.NewDecoder(r.Body)
-	err := dec.Decode(&apiReq)
+	err := dec.Decode(&pubKey)
 	if err != nil {
 		err := errors.Wrap(err, "failed to decode the webAuthnResp")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	apiResp, err := apiClient.FinalizeWebAuthnOperation(requestId,&apiReq)
+	credReq := hankoApiClient.HankoCredentialRequest{
+		WebAuthnResponse: pubKey,
+	}
+
+	apiResp, err := apiClient.FinalizeWebAuthnOperation(requestId,&credReq)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
