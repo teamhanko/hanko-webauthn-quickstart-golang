@@ -20,9 +20,12 @@ type TemplateData struct {
 }
 
 func init() {
-	cfg := RequireKeys([]string{"apiUrl", "apiKey", "userId", "userName"})
+	cfg := RequireKeys([]string{"apiUrl", "apiKey", "apiKeyId", "userId", "userName"})
 
-	apiClient = hankoApiClient.NewHankoApiClient(cfg.GetString("apiUrl"), cfg.GetString("apiKey"))
+	apiClient = hankoApiClient.NewHankoHmacClient(
+		cfg.GetString("apiUrl"),
+		cfg.GetString("apiKey"),
+		cfg.GetString("apiKeyId"))
 	userId = cfg.GetString("userId")
 	userName = cfg.GetString("userName")
 }
