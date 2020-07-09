@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/teamhanko/hanko-sdk-golang"
 	"html/template"
@@ -12,14 +11,20 @@ import (
 	"path"
 )
 
-var apiHost = "https://api.dev.hanko.io"
-var apiSecret = "17a1b9585cc92782d6017324c77887b283427e8076a2e775dbd7570"
-var apiClient = hankoApiClient.NewHankoApiClient(apiHost, apiSecret)
-var userId = uuid.New()
-var userName = "testapp@hanko.io"
+var apiClient *hankoApiClient.HankoApiClient
+var userId string
+var userName string
 
 type TemplateData struct {
 	UserId string
+}
+
+func init() {
+	cfg := RequireKeys([]string{"apiUrl", "apiKey", "userId", "userName"})
+
+	apiClient = hankoApiClient.NewHankoApiClient(cfg.GetString("apiUrl"), cfg.GetString("apiKey"))
+	userId = cfg.GetString("userId")
+	userName = cfg.GetString("userName")
 }
 
 func main() {
@@ -61,17 +66,17 @@ func showDeRegistrationPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func beginRegistration(w http.ResponseWriter, r *http.Request) {
-	apiResp, err := apiClient.InitWebauthnRegistration(userId.String(), userName)
+	apiResp, err := apiClient.InitWebauthnRegistration(userId, userName)
 	handleResponse(w, apiResp, err)
 }
 
 func beginAuthentication(w http.ResponseWriter, r *http.Request) {
-	apiResp, err := apiClient.InitWebAuthnAuthentication(userId.String(), userName)
+	apiResp, err := apiClient.InitWebAuthnAuthentication(userId, userName)
 	handleResponse(w, apiResp, err)
 }
 
 func beginDeRegistration(w http.ResponseWriter, r *http.Request) {
-	apiResp, err := apiClient.InitWebAuthnDeRegistration(userId.String(), userName)
+	apiResp, err := apiClient.InitWebAuthnDeRegistration(userId, userName)
 	handleResponse(w, apiResp, err)
 }
 
@@ -116,7 +121,7 @@ func renderTemplate(w http.ResponseWriter, site string) {
 	file := fmt.Sprintf("templates/%s.html", site)
 	tmpl, _ := template.ParseFiles(file, "templates/main.html")
 	err := tmpl.ExecuteTemplate(w, "main", &TemplateData{
-		UserId: userId.String(),
+		UserId: userId,
 	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

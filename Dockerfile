@@ -12,4 +12,5 @@ RUN apk --no-cache add ca-certificates
 COPY --from=builder /go/bin/hanko-webauthn-quickstart .
 COPY templates ./templates
 COPY assets ./assets
+COPY config ./config
 CMD ["./hanko-webauthn-quickstart"]
