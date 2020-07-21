@@ -1,4 +1,6 @@
 apiUrl: https://api.dev.hanko.io
-apiKey: 17a1b9585cc92782d6017324c77887b283427e8076a2e775dbd7570
-apiKeyId: 747cd24f-5e91-4b56-8738-7548d8ce3ea2
+# Enter your API Key ID/Api Key here.
+# See the README or https://docs.hanko.io/#/auth/quickstart/webauthn/quick-start-webauthn on how to obtain an API Key ID/API Key.
+apiKey:
+apiKeyId:
 userName: testapp@hanko.io
