@@ -1,4 +1,4 @@
-apiUrl: https://api.dev.hanko.io
+apiUrl: https://api.hanko.io
 # Enter your API Key ID/Api Key here.
 # See the README or https://docs.hanko.io/#/auth/quickstart/webauthn/quick-start-webauthn on how to obtain an API Key ID/API Key.
 apiKey:
