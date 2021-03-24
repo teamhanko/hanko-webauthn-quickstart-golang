@@ -2,144 +2,167 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
-	"github.com/pkg/errors"
-	"github.com/teamhanko/hanko-sdk-golang"
-	"html/template"
-	"log"
+	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
+	"github.com/teamhanko/hanko-sdk-golang/client"
+	"github.com/teamhanko/hanko-sdk-golang/webauthn"
+	"github.com/teamhanko/webauthn/protocol"
+	"gitlab.com/hanko/hanko-test-app/config"
 	"net/http"
-	"path"
+	"strconv"
 )
 
-var apiClient *hankoApiClient.HankoApiClient
+var apiClient *webauthn.Client
 var userId string
 var userName string
 
-type TemplateData struct {
-	UserId string
-}
-
 func init() {
-	cfg := RequireKeys([]string{"apiUrl", "apiKey", "apiKeyId", "userId", "userName"})
-
-	apiClient = hankoApiClient.NewHankoHmacClient(
-		cfg.GetString("apiUrl"),
-		cfg.GetString("apiKey"),
-		cfg.GetString("apiKeyId"))
-	userId = cfg.GetString("userId")
-	userName = cfg.GetString("userName")
+	apiClient = webauthn.NewClient(config.C.ApiUrl, config.C.ApiKey, client.WithHmac(config.C.ApiKeyId),
+		client.WithLogLevel(log.DebugLevel))
+	userId = config.C.UserName
+	userName = config.C.UserName
 }
 
 func main() {
-	// serve static content
-	http.HandleFunc("/assets/", assetHandler)
-	http.HandleFunc("/favicon.ico", assetHandler)
+	r := gin.Default()
+	r.Static("/assets", "./assets")
+	r.StaticFile("/favicon.ico", "./assets/favicon.ico")
+	r.StaticFile("/", "./index.html")
 
-	// serve templates
-	http.HandleFunc("/", rootHandler)
-	http.HandleFunc("/show_authentication/", showAuthenticationPage)
-	http.HandleFunc("/show_registration/", showRegistrationPage)
-	http.HandleFunc("/show_deregistration/", showDeRegistrationPage)
+	r.POST("/registration_initialize", func(c *gin.Context) {
+		authenticatorAttachment := c.Query("authenticator_attachment")
+		userVerification := c.Query("user_verification")
+		conveyancePreference := c.Query("conveyance_preference")
+		requireResidentKeyStr := c.Query("require_resident_key")
+		requireResidentKeyBool, _ := strconv.ParseBool(requireResidentKeyStr)
 
-	// json endpoints
-	http.HandleFunc("/begin_authentication/", beginAuthentication)
-	http.HandleFunc("/begin_registration/", beginRegistration)
-	http.HandleFunc("/begin_deregistration/", beginDeRegistration)
-	http.HandleFunc("/finalization/", finalize)
+		user := client.User{
+			ID:          userId,
+			Name:        userName,
+			DisplayName: userName,
+		}
 
-	// server start
-	log.Println("Starting Server on localhost:3000")
-	log.Fatal(http.ListenAndServe(":3000", nil))
-}
+		authenticatorSelection := protocol.AuthenticatorSelection{
+			AuthenticatorAttachment: protocol.AuthenticatorAttachment(authenticatorAttachment),
+			UserVerification:        protocol.UserVerificationRequirement(userVerification),
+			RequireResidentKey:      &requireResidentKeyBool,
+		}
 
-func rootHandler(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/show_registration", http.StatusFound)
-}
+		options := webauthn.RegistrationInitializationRequestOptions{
+			AuthenticatorSelection: authenticatorSelection,
+			ConveyancePreference:   protocol.ConveyancePreference(conveyancePreference),
+		}
 
-func showAuthenticationPage(w http.ResponseWriter, r *http.Request) {
-	renderTemplate(w, "authentication")
-}
+		request := webauthn.RegistrationInitializationRequest{User: user, Options: options}
 
-func showRegistrationPage(w http.ResponseWriter, r *http.Request) {
-	renderTemplate(w, "registration")
-}
+		response, err := apiClient.InitializeRegistration(&request)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 
-func showDeRegistrationPage(w http.ResponseWriter, r *http.Request) {
-	renderTemplate(w, "deregistration")
-}
-
-func beginRegistration(w http.ResponseWriter, r *http.Request) {
-	apiResp, err := apiClient.InitWebauthnRegistration(userId, userName)
-	handleResponse(w, apiResp, err)
-}
-
-func beginAuthentication(w http.ResponseWriter, r *http.Request) {
-	apiResp, err := apiClient.InitWebAuthnAuthentication(userId, userName)
-	handleResponse(w, apiResp, err)
-}
-
-func beginDeRegistration(w http.ResponseWriter, r *http.Request) {
-	apiResp, err := apiClient.InitWebAuthnDeRegistration(userId, userName)
-	handleResponse(w, apiResp, err)
-}
-
-func handleResponse(w http.ResponseWriter, apiResp *hankoApiClient.Response, err error) {
-	if err != nil {
-		err = errors.Wrapf(err, "api call failed - user: %s (%s)", userId, userName)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	renderJson(w, apiResp)
-}
-
-func finalize(w http.ResponseWriter, r *http.Request) {
-	requestId := r.URL.Query().Get("requestId")
-	pubKey := hankoApiClient.PublicKeyCredential{}
-	dec := json.NewDecoder(r.Body)
-	err := dec.Decode(&pubKey)
-	if err != nil {
-		err := errors.Wrap(err, "failed to decode the webAuthnResp")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	credReq := hankoApiClient.HankoCredentialRequest{
-		WebAuthnResponse: pubKey,
-	}
-
-	apiResp, err := apiClient.FinalizeWebAuthnOperation(requestId,&credReq)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	renderJson(w, apiResp)
-}
-
-func assetHandler(w http.ResponseWriter, r *http.Request) {
-	_, file := path.Split(r.URL.Path)
-	http.ServeFile(w, r, path.Join("assets", file))
-}
-
-func renderTemplate(w http.ResponseWriter, site string) {
-	file := fmt.Sprintf("templates/%s.html", site)
-	tmpl, _ := template.ParseFiles(file, "templates/main.html")
-	err := tmpl.ExecuteTemplate(w, "main", &TemplateData{
-		UserId: userId,
+		c.JSON(http.StatusOK, response)
 	})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
 
-func renderJson(w http.ResponseWriter, response interface{}) {
-	js, err := json.Marshal(response)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(js)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	r.POST("/registration_finalize", func(c *gin.Context) {
+		request := &webauthn.RegistrationFinalizationRequest{}
+		dec := json.NewDecoder(c.Request.Body)
+		err := dec.Decode(request)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		response, err := apiClient.FinalizeRegistration(request)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, response)
+	})
+
+	r.POST("/authentication_initialize", func(c *gin.Context) {
+		authenticatorAttachment := c.Query("authenticator_attachment")
+		userVerification := c.Query("user_verification")
+
+		user := client.User{
+			ID:          userId,
+			Name:        userName,
+			DisplayName: userName,
+		}
+
+		options := webauthn.AuthenticationInitializationRequestOptions{
+			UserVerification:        protocol.UserVerificationRequirement(userVerification),
+			AuthenticatorAttachment: protocol.AuthenticatorAttachment(authenticatorAttachment),
+		}
+
+		request := &webauthn.AuthenticationInitializationRequest{User: user, Options: options}
+
+		response, err := apiClient.InitializeAuthentication(request)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, response)
+	})
+
+	r.POST("/authentication_finalize", func(c *gin.Context) {
+		request := &webauthn.AuthenticationFinalizationRequest{}
+
+		dec := json.NewDecoder(c.Request.Body)
+		err := dec.Decode(request)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		response, err := apiClient.FinalizeAuthentication(request)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, response)
+	})
+
+	r.GET("/credentials/:credential_id", func(c *gin.Context) {
+		credentialId := c.Param("credential_id")
+
+		response, err := apiClient.GetCredential(credentialId)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, response)
+	})
+
+	r.GET("/credentials", func(c *gin.Context) {
+		request := &webauthn.CredentialQuery{UserId: userId}
+
+		response, err := apiClient.ListCredentials(request)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, response)
+	})
+
+	r.DELETE("/credentials/:credential_id", func(c *gin.Context) {
+		credentialId := c.Param("credential_id")
+
+		err := apiClient.DeleteCredential(credentialId)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{})
+	})
+
+	log.Println("Starting Server on localhost:3000")
+	log.Fatal(r.Run(":3000"))
 }

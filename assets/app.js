@@ -1,135 +1,192 @@
-(function (win, hankoWebAuthn) {
+(function (win, webauthn, mustache, jsonViewer) {
     win.app = {
-
-        // Instantiate Hanko WebAuthnClient.
-        hankoWebAuthn: new hankoWebAuthn.HankoWebAuthn(),
-
-        // Store DOM elements.
+        // elements stores the dynamically controlled html elements
         elements: {},
 
-        // Store Hanko API response we are getting forwarded from the example API.
-        hankoApiResponse: {},
+        // initializationResponse stores the initialization response of either a registration or an
+        // authentication request
+        initializationResponse: {},
 
-        // Endpoints of the example API.
+        // endpoints of the example api
         endpoints: {
-            "begin_registration": "http://localhost:3000/begin_registration/",
-            "begin_authentication": "http://localhost:3000/begin_authentication/",
-            "begin_deregistration": "http://localhost:3000/begin_deregistration/",
-            "finalization": "http://localhost:3000/finalization/"
+            "initialize_registration": "/registration_initialize",
+            "finalize_registration": "/registration_finalize",
+            "initialize_authentication": "/authentication_initialize",
+            "finalize_authentication": "/authentication_finalize",
+            "credentials": "/credentials",
         },
 
-        // Headers when fetching the example API
+        // requestHeader when fetching the example api
         requestHeader: {"Content-Type": "application/json"},
 
-        // Store DOM elements and bind events to the buttons.
+        // runs the application
         run: () => win.app._onDocumentReady(() => {
-            win.app._getElementsById();
-            win.app._bindEvents()
+            win.app._referenceElements()
+            win.app.renderRegistration()
+            win.app.renderCredentials()
         }),
 
-        // Fetch the endpoint which invokes the registration.
-        beginRegistrationEvent: () => win.app._beginRequest(win.app.endpoints.begin_registration),
-
-        // Fetch the endpoint which invokes the authentication.
-        beginAuthenticationEvent: () => win.app._beginRequest(win.app.endpoints.begin_authentication),
-
-        // Fetch the endpoint which invokes the de-registration.
-        beginDeRegistrationEvent: () => win.app._beginRequest(win.app.endpoints.begin_deregistration),
-
-        // Sign registration request and then fetch the endpoint which finalizes the registration.
-        finalizeRegistrationEvent: () => {
-            win.app._emptyTextElements();
-            win.app.hankoWebAuthn.createCredentials(win.app.hankoApiResponse.request)
-                .then(win.app._finalizeRequest)
-                .catch(win.app._showError)
+        // renderRegistration renders the registration page
+        renderRegistration: () => {
+            win.app._renderWebauthnDemoContainer("registration-template")
         },
 
-        // Sign authentication request and then fetch the endpoint which finalizes the authentication.
-        finalizeAuthenticationEvent: () => {
-            win.app._emptyTextElements();
-            win.app.hankoWebAuthn.getCredentials(win.app.hankoApiResponse.request)
-                .then(win.app._finalizeRequest)
-                .catch(win.app._showError)
+        // renderAuthentication renders the authentication page
+        renderAuthentication: () => {
+            win.app._renderWebauthnDemoContainer("authentication-template")
         },
 
-        // Fetch the example API, which itself fetches the Hanko API either for a REG, AUTH or DEREG request. The
-        // example API forwards the hankoApiResponse back to us. At least for the finalization of a REG or AUTH request,
-        // we need to save the hankoApiResponse.id and hankoApiResponse.request in our front-end.
-        _beginRequest: endpoint => {
-            win.app._emptyTextElements();
-            fetch(endpoint, {method: "GET", headers: win.app.requestHeader})
-                .then(response => response.json().then(win.app._setHankoApiResponse).catch(win.app._showError))
-                .catch(win.app._showError)
-        },
-
-        // Send the signed request to the example API and forward it to the Hanko API.
-        _finalizeRequest: credentialRequest => {
-            const endpoint = win.app.endpoints.finalization + "?requestId=" + win.app.hankoApiResponse.id,
-                body = JSON.stringify(credentialRequest);
-
-            win.app._emptyTextElements();
-            fetch(endpoint, {method: "POST", headers: win.app.requestHeader, body: body})
-                .then(response => response.json().then(win.app._setHankoApiResponse).catch(win.app._showError))
-                .catch(win.app._showError)
-        },
-
-        // Get elements by id and store them to the elements property.
-        _getElementsById: () => ["request_id-text", "operation-text", "valid_until-text", "status-text", "error-text",
-            "begin_registration-button", "finalize_registration-button", "begin_authentication-button",
-            "finalize_authentication-button", "begin_deregistration-button"]
-            .forEach((elementId) => win.app.elements[elementId] = document.getElementById(elementId)),
-
-        // Bind all the events.
-        _bindEvents: () => {
-            const elementIdToEvent = {
-                "begin_registration-button": win.app.beginRegistrationEvent,
-                "finalize_registration-button": win.app.finalizeRegistrationEvent,
-                "begin_authentication-button": win.app.beginAuthenticationEvent,
-                "finalize_authentication-button": win.app.finalizeAuthenticationEvent,
-                "begin_deregistration-button": win.app.beginDeRegistrationEvent
-            };
-
-            Object.keys(elementIdToEvent).forEach((elementId) => {
-                win.app._bindClickEvent(elementId, elementIdToEvent[elementId])
+        // renderCredentials gets and renders a list of credentials
+        renderCredentials: () => {
+            win.app._request(win.app.endpoints["credentials"], "GET", null, response => {
+                win.app._renderCredentialsContainer("credentials-template",
+                    {credentials: response, hasCredentials: response !== null && response.length > 0})
             })
         },
 
-        // Bind click event to an element if it´s present.
-        _bindClickEvent: (elementId, fn) => {
-            if (win.app.elements[elementId] !== null) {
-                win.app.elements[elementId].addEventListener("click", fn);
-            }
-        },
-
-        // Sets the hankoApiResponse property and updates the DOM elements
-        _setHankoApiResponse: hankoApiResponse => {
-            const elementIdToResponseProp = {
-                "request_id-text": "id",
-                "operation-text": "operation",
-                "valid_until-text": "validUntil",
-                "status-text": "status"
-            };
-
-            win.app.hankoApiResponse = hankoApiResponse;
-
-            if (hankoApiResponse.id === "") {
-                win.app._showError("Hanko API response is empty. You may have to register an authenticator " +
-                    "device first.");
-            }
-
-            Object.keys(elementIdToResponseProp).forEach((elementId) => {
-                win.app.elements[elementId].innerText = hankoApiResponse[elementIdToResponseProp[elementId]]
+        // renderCredential gets and renders a single credentials
+        renderCredential: credentialId => {
+            const url = win.app.endpoints["credentials"] + "/" + credentialId
+            win.app._request(url, "GET", null, response => {
+                win.app._renderCredentialsContainer("credential-template", response)
             })
         },
 
-        // Show error to the user.
+        // deleteCredential fetches the api to delete the given credentialId and renders the list of
+        // credentials on success
+        deleteCredential: credentialId => {
+            const url = win.app.endpoints["credentials"] + "/" + credentialId
+            win.app._request(url, "DELETE", null, () => win.app.renderCredentials())
+        },
+
+        // initializeRegistration fetches the endpoint which invokes the registration and displays the response in the
+        // frontend (left side). the response is also used to sign the request in the finalization step.
+        initializeRegistration: event => {
+            const data = new FormData(win.app.elements["registration-form"])
+            const params = new URLSearchParams(data)
+            const url = win.app.endpoints.initialize_registration + "?" + params.toString()
+            win.app._initializeRequest(url, response => {
+                win.app.initializationResponse = response // to be used in the finalization step
+                win.app.elements["initialize-response"].append(win.app._formatJson(response))
+            })
+        },
+
+        // finalizeRegistration signs the registration request using the webauthn api and sends the result to the
+        // finalization endpoint. displays the response in the frontend (right side).
+        finalizeRegistration: () => {
+            const url = win.app.endpoints.finalize_registration
+            webauthn.createCredentials(JSON.stringify(win.app.initializationResponse))
+                .then(credential => win.app._finalizeRequest(url, credential, response => {
+                    win.app.elements["finalize-response"].append(win.app._formatJson(response))
+                    win.app.renderCredentials()
+                })).catch(win.app._showError)
+        },
+
+        // initializeAuthentication fetches the endpoint which invokes the authentication and displays the response
+        // in the frontend (left side). the response is also used to sign the request in the finalization step.
+        initializeAuthentication: () => {
+            const data = new FormData(win.app.elements["authentication-form"])
+            const params = new URLSearchParams(data)
+            const url = win.app.endpoints.initialize_authentication + "?" + params.toString()
+            win.app._initializeRequest(url, response => {
+                win.app.initializationResponse = response // to be used in the finalization step
+                win.app.elements["initialize-response"].append(win.app._formatJson(response))
+            })
+        },
+
+        // finalizeAuthentication signs the authentication request using the webauthn api and sends the result to the
+        // finalization endpoint. displays the response in the frontend (right side).
+        finalizeAuthentication: () => {
+            const url = win.app.endpoints.finalize_authentication
+            webauthn.getCredentials(JSON.stringify(win.app.initializationResponse))
+                .then(credential => win.app._finalizeRequest(url, credential, response => {
+                    win.app.elements["finalize-response"].append(win.app._formatJson(response))
+                })).catch(win.app._showError)
+        },
+
+        // _renderWebauthnDemoContainer renders the content of the upper part of the page
+        _renderWebauthnDemoContainer: templateElementId => {
+            win.app.elements["error-text"].innerText = ""
+            win.app._render("webauthn-demo-container", templateElementId,
+                {}, ["teaser-partial"])
+        },
+
+        // _renderCredentialsContainer renders the content of the lower part of the page
+        _renderCredentialsContainer: (templateElementId, data) => {
+            win.app._render("credentials-container", templateElementId, data, [])
+        },
+
+        // _render renders the mustache template with the specified templateElementId and bakes in the data. the partial
+        // parameter awaits a list of elementIds of mustache templates to be used as partials. the partials can then
+        // be included to a mustache template by using the "{{>my-partial}}" syntax while "my-partial" is the id of the
+        // element which contains the partial.
+        _render: (targetElementId, templateElementId, data, partials) => {
+            const p = partials.reduce((acc, partialId) =>
+                ({...acc, [partialId]: win.app.elements[partialId].innerHTML}), {});
+            data["formatDate"] = win.app._formatDate
+            win.app.elements[targetElementId].innerHTML
+                = mustache.render(win.app.elements[templateElementId].innerHTML, data, p)
+            win.app._referenceElements()
+        },
+
+        // _formatDate used within mustache templates to format time strings,
+        // e.g. "{{#formatDate}}2021-03-17T13:04:30.106345Z{{/formatDate}}"
+        _formatDate: () => (str, render) => {
+            const dt = new Date(render(str))
+            return dt.toLocaleDateString(undefined, {localeMatcher: "best fit"})
+                + " " + dt.toLocaleTimeString(undefined, {localeMatcher: "best fit"})
+        },
+
+        // _initializeRequest resets the necessary ui elements and fetches the example api to initialize
+        // a new registration or authentication
+        _initializeRequest: (endpoint, cb) => {
+            ["initialize-response", "finalize-response", "error-text"]
+                .forEach(elementId => win.app.elements[elementId].innerText = "")
+            win.app._request(endpoint, "POST", null, response => cb(response))
+        },
+
+        // _initializeRequest resets the necessary ui elements and fetches the example api to finalize
+        // a registration or authentication
+        _finalizeRequest: (endpoint, credential, cb) => {
+            ["finalize-response", "error-text"].forEach(elementId => win.app.elements[elementId].innerText = "")
+            win.app._request(endpoint, "POST", JSON.stringify(credential), response => cb(response))
+        },
+
+        // _request wraps the fetch method and displays the error when something went wrong
+        _request: (endpoint, method, body, cb) => {
+            fetch(endpoint, {method: method, headers: win.app.requestHeader, body: body}).then(response => {
+                if (response.status === 200) {
+                    response.json().then(cb).catch(win.app._showError)
+                } else {
+                    response.json()
+                        .then(response => win.app._showError(response.error))
+                        .catch(() => response.text().then(win.app._showError))
+                }
+            }).catch(win.app._showError)
+        },
+
+        // _referenceElements stores references of the element that are dynamically controlled
+        // to the elements property
+        _referenceElements: () => [
+            // template and layout elements
+            "teaser-partial", "registration-template", "authentication-template", "credentials-template",
+            "credential-template", "credentials-container", "webauthn-demo-container", "error-text",
+
+            // elements used for the webauthn demonstration
+            "registration-form", "authentication-form", "initialize-response", "finalize-response",
+        ].forEach(elementId => win.app.elements[elementId] = document.getElementById(elementId)),
+
+        // _formatJson takes any javascript object and converts it to pretty printed html, returns a html node.
+        _formatJson: data => {
+            const j = new jsonViewer()
+            j.showJSON(data, -1, 2)
+            return j.getContainer()
+        },
+
+        // _showError shows the error to the user.
         _showError: error => win.app.elements["error-text"].innerText = error,
 
-        // Clear out the text elements.
-        _emptyTextElements: () => ["request_id-text", "operation-text", "valid_until-text", "status-text", "error-text"]
-            .forEach((elementId) => win.app.elements[elementId].innerText = ""),
-
-        // Call fn when document has been loaded
+        // _onDocumentReady calls fn when document has been loaded
         _onDocumentReady: fn => {
             if (document.readyState === "complete" || document.readyState === "interactive") {
                 setTimeout(fn, 1);
@@ -138,4 +195,4 @@
             }
         }
     }
-})(window, hankoWebAuthn);
+})(window, new hankoWebAuthn.HankoWebAuthn(), Mustache, JSONViewer);

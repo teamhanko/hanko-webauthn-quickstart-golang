@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hanko quick-start app</title>
+    <script src="https://cdn.jsdelivr.net/npm/hanko-webauthn@1.1.2/dist/umd/index.min.js"></script>
+    <script src="https://unpkg.com/mustache@4.1.0"></script>
+    <script src="/assets/json-viewer.js"></script>
+    <script src="/assets/app.js"></script>
+    <script>app.run();</script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat:400,500,700,800&display=swap">
+    <link rel="stylesheet" href="/assets/styles.css">
+    <link rel="stylesheet" href="/assets/json-viewer.css">
+</head>
+<body>
+<header>
+    <img class="logo" src="/assets/hanko-logo.png"/>
+</header>
+<nav>
+    <ul>
+        <li><a href="javascript:void(0);" onclick="app.renderRegistration()">Registration</a></li>
+        <li><a href="javascript:void(0);" onclick="app.renderAuthentication()">Authentication</a></li>
+    </ul>
+</nav>
+<main>
+    <section id="webauthn-demo-container"></section>
+    <section id="error-text"></section>
+    <section id="credentials-container"></section>
+</main>
+<footer>
+    <section><a href="https://docs.hanko.io/#/auth/quickstart/webauthn/quick-start-webauthn">WebAuthn Quick Start
+        Guide</a></section>
+</footer>
+<script id="teaser-partial" type="x-tmpl-mustache">
+<p>This example Application shows you how to Register, Authenticate and Deregister using WebAuthn with Hanko.
+    For an in-depth walk-through please refer to
+    <a href="https://docs.hanko.io/#/auth/quickstart/webauthn/quick-start-webauthn-de-registration"> the docs.</a>
+</p>
+</script>
+<script id="registration-template" type="x-tmpl-mustache">
+<h1>Register an Authenticator Device</h1>
+{{>teaser-partial}}
+<form id="registration-form" onsubmit="app.initializeRegistration(event.preventDefault())">
+    <table class="options">
+        <tr>
+            <th>Authenticator Attachment</th>
+            <td>
+                <select name="authenticator_attachment">
+                    <option value="">Unspecified</option>
+                    <option value="platform">Platform</option>
+                    <option value="cross-platform">Cross platform</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <th>User Verification</th>
+            <td>
+                <select name="user_verification">
+                    <option value="required">Required</option>
+                    <option value="preferred">Preferred</option>
+                    <option value="discouraged">Discouraged</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <th>Attestation Conveyance Preference</th>
+            <td>
+                <select name="conveyance_preference">
+                    <option value="none">None</option>
+                    <option value="indirect">Indirect</option>
+                    <option value="direct">Direct</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <th>Require Resident Key</th>
+            <td>
+                <select name="require_resident_key">
+                    <option value="false">Not Required</option>
+                    <option value="true">Required</option>
+                </select>
+            </td>
+        </tr>
+    </table>
+    <div id="response-container">
+        <div>
+            <button type="submit">Initialize registration</button>
+            <div id="initialize-response"></div>
+        </div>
+        <div>
+            <button type="button" onClick="app.finalizeRegistration()">Finalize registration</button>
+            <div id="finalize-response"></div>
+        </div>
+    </div>
+</form>
+</script>
+<script id="authentication-template" type="x-tmpl-mustache">
+<h1>Authenticate with an Authenticator Device</h1>
+{{>teaser-partial}}
+<form id="authentication-form" onsubmit="app.initializeAuthentication(event.preventDefault())">
+    <table class="options">
+        <tr>
+            <th>Authenticator Attachment</th>
+            <td>
+                <select name="authenticator_attachment">
+                    <option value="">Unspecified</option>
+                    <option value="platform">Platform</option>
+                    <option value="cross-platform">Cross platform</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <th>User Verification</th>
+            <td>
+                <select name="user_verification">
+                    <option value="required">Required</option>
+                    <option value="preferred">Preferred</option>
+                    <option value="discouraged">Discouraged</option>
+                </select>
+            </td>
+        </tr>
+    </table>
+    <div id="response-container">
+        <div>
+            <button type="submit">Initialize authentication</button>
+            <div id="initialize-response"></div>
+        </div>
+        <div>
+            <button type="button" onClick="app.finalizeAuthentication()">Finalize authentication</button>
+            <div id="finalize-response"></div>
+        </div>
+    </div>
+</form>
+</script>
+<script id="credentials-template" type="x-tmpl-mustache">
+{{#hasCredentials}}
+<h1>Credentials</h1>
+<table class="credentials list">
+    <tr>
+        <th>ID</th>
+        <th>Created At</th>
+    </tr>
+    {{#credentials}}
+    <tr onClick="app.renderCredential('{{id}}')">
+        <td class="credential-id">{{id}}</td>
+        <td>{{#formatDate}}{{createdAt}}{{/formatDate}}</td>
+    </tr>
+    {{/credentials}}
+</table>
+{{/hasCredentials}}
+</script>
+<script id="credential-template" type="x-tmpl-mustache">
+<h1>Credentials</h1>
+<table class="credentials details" onClick="app.renderCredentials()">
+    <tr>
+        <th>ID</th>
+        <td class="credential-id">{{id}}</td>
+    </tr>
+    <tr>
+        <th>AAGUID</th>
+        <td>{{authenticator.aaguid}}</td>
+    </tr>
+    <tr>
+        <th>Resident key</th>
+        <td>{{isResidentKey}}</td>
+    </tr>
+    <tr>
+        <th>Last used</th>
+        <td>{{#formatDate}}{{lastUsed}}{{/formatDate}}</td>
+    </tr>
+    <tr>
+        <th>Created at</th>
+        <td>{{#formatDate}}{{createdAt}}{{/formatDate}}</td>
+    <tr>
+</table>
+<a href="javascript:void(0);" onclick="app.deleteCredential('{{id}}')">delete credential</a><br/>
+</script>
+</body>
+</html>
