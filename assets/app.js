@@ -19,7 +19,8 @@
         // requestHeader when fetching the example api
         requestHeader: {"Content-Type": "application/json"},
 
-        // runs the application
+        // run initially renders the upper part of the page with the webauthn demonstration and the lower part with the
+        // list of credentials if there are any
         run: () => win.app._onDocumentReady(() => {
             win.app._referenceElements()
             win.app.renderRegistration()
@@ -44,7 +45,8 @@
             })
         },
 
-        // renderCredential gets and renders a single credentials
+
+        // renderCredential gets and renders a single credential
         renderCredential: credentialId => {
             const url = win.app.endpoints["credentials"] + "/" + credentialId
             win.app._request(url, "GET", null, response => {
@@ -60,7 +62,7 @@
         },
 
         // initializeRegistration fetches the endpoint which invokes the registration and displays the response in the
-        // frontend (left side). the response is also used to sign the request in the finalization step.
+        // ui (left side). the response is also used to sign the request in the finalization step
         initializeRegistration: event => {
             const data = new FormData(win.app.elements["registration-form"])
             const params = new URLSearchParams(data)
@@ -72,7 +74,7 @@
         },
 
         // finalizeRegistration signs the registration request using the webauthn api and sends the result to the
-        // finalization endpoint. displays the response in the frontend (right side).
+        // finalization endpoint. displays the response in the ui (right side)
         finalizeRegistration: () => {
             const url = win.app.endpoints.finalize_registration
             webauthn.createCredentials(JSON.stringify(win.app.initializationResponse))
@@ -83,7 +85,7 @@
         },
 
         // initializeAuthentication fetches the endpoint which invokes the authentication and displays the response
-        // in the frontend (left side). the response is also used to sign the request in the finalization step.
+        // in the ui (left side). the response is also used to sign the request in the finalization step
         initializeAuthentication: () => {
             const data = new FormData(win.app.elements["authentication-form"])
             const params = new URLSearchParams(data)
@@ -95,7 +97,7 @@
         },
 
         // finalizeAuthentication signs the authentication request using the webauthn api and sends the result to the
-        // finalization endpoint. displays the response in the frontend (right side).
+        // finalization endpoint. displays the response in the ui (right side)
         finalizeAuthentication: () => {
             const url = win.app.endpoints.finalize_authentication
             webauthn.getCredentials(JSON.stringify(win.app.initializationResponse))
@@ -116,10 +118,10 @@
             win.app._render("credentials-container", templateElementId, data, [])
         },
 
-        // _render renders the mustache template with the specified templateElementId and bakes in the data. the partial
-        // parameter awaits a list of elementIds of mustache templates to be used as partials. the partials can then
-        // be included to a mustache template by using the "{{>my-partial}}" syntax while "my-partial" is the id of the
-        // element which contains the partial.
+        // _render renders into targetElementId the mustache template with the specified
+        // templateElementId and bakes in the data. the partial parameter contains a list of elementIds of mustache
+        // templates to be used as partials. the partials can then be included to a mustache template by using
+        // the "{{>my-partial}}" syntax while "my-partial" is the id of the element which contains the partial
         _render: (targetElementId, templateElementId, data, partials) => {
             const p = partials.reduce((acc, partialId) =>
                 ({...acc, [partialId]: win.app.elements[partialId].innerHTML}), {});
