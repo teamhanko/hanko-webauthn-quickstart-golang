@@ -55,9 +55,9 @@ func main() {
 
 		request := webauthn.RegistrationInitializationRequest{User: user, Options: options}
 
-		response, err := apiClient.InitializeRegistration(&request)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response, apiErr := apiClient.InitializeRegistration(&request)
+		if apiErr != nil {
+			c.JSON(apiErr.StatusCode, gin.H{"error": apiErr.Error()})
 			return
 		}
 
@@ -73,9 +73,9 @@ func main() {
 			return
 		}
 
-		response, err := apiClient.FinalizeRegistration(request)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response, apiErr := apiClient.FinalizeRegistration(request)
+		if apiErr != nil {
+			c.JSON(apiErr.StatusCode, gin.H{"error": apiErr.Error()})
 			return
 		}
 
@@ -99,9 +99,9 @@ func main() {
 
 		request := &webauthn.AuthenticationInitializationRequest{User: user, Options: options}
 
-		response, err := apiClient.InitializeAuthentication(request)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response, apiErr := apiClient.InitializeAuthentication(request)
+		if apiErr != nil {
+			c.JSON(apiErr.StatusCode, gin.H{"error": apiErr.Error()})
 			return
 		}
 
@@ -118,9 +118,9 @@ func main() {
 			return
 		}
 
-		response, err := apiClient.FinalizeAuthentication(request)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response, apiErr := apiClient.FinalizeAuthentication(request)
+		if apiErr != nil {
+			c.JSON(apiErr.StatusCode, gin.H{"error": apiErr.Error()})
 			return
 		}
 
@@ -130,9 +130,9 @@ func main() {
 	r.GET("/credentials/:credential_id", func(c *gin.Context) {
 		credentialId := c.Param("credential_id")
 
-		response, err := apiClient.GetCredential(credentialId)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response, apiErr := apiClient.GetCredential(credentialId)
+		if apiErr != nil {
+			c.JSON(apiErr.StatusCode, gin.H{"error": apiErr.Error()})
 			return
 		}
 
@@ -142,9 +142,9 @@ func main() {
 	r.GET("/credentials", func(c *gin.Context) {
 		request := &webauthn.CredentialQuery{UserId: userId}
 
-		response, err := apiClient.ListCredentials(request)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response, apiErr := apiClient.ListCredentials(request)
+		if apiErr != nil {
+			c.JSON(apiErr.StatusCode, gin.H{"error": apiErr.Error()})
 			return
 		}
 
@@ -154,9 +154,9 @@ func main() {
 	r.DELETE("/credentials/:credential_id", func(c *gin.Context) {
 		credentialId := c.Param("credential_id")
 
-		err := apiClient.DeleteCredential(credentialId)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		apiErr := apiClient.DeleteCredential(credentialId)
+		if apiErr != nil {
+			c.JSON(apiErr.StatusCode, gin.H{"error": apiErr.Error()})
 			return
 		}
 
