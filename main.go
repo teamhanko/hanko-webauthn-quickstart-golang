@@ -17,7 +17,7 @@ var userId string
 var userName string
 
 func init() {
-	apiClient = webauthn.NewClient(config.C.ApiUrl, config.C.ApiKey, client.WithHmac(config.C.ApiKeyId),
+	apiClient = webauthn.NewClient(config.C.ApiUrl, config.C.ApiSecret, client.WithHmac(config.C.ApiKeyId),
 		client.WithLogLevel(log.DebugLevel))
 	userId = config.C.UserName
 	userName = config.C.UserName

@@ -1,6 +1,4 @@
-apiUrl: http://localhost:8000
-# Enter your API Key ID/Api Key here.
-# See the README or https://docs.hanko.io/#/auth/quickstart/webauthn/quick-start-webauthn on how to obtain an API Key ID/API Key.
-apiKey: secret
-apiKeyId: id
+apiUrl: https://api.hanko.io
+apiSecret:
+apiKeyId:
 userName: testapp@hanko.io
