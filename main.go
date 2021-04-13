@@ -6,7 +6,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/teamhanko/hanko-sdk-golang/client"
 	"github.com/teamhanko/hanko-sdk-golang/webauthn"
-	"github.com/teamhanko/webauthn/protocol"
 	"gitlab.com/hanko/hanko-test-app/config"
 	"net/http"
 	"strconv"
@@ -42,15 +41,15 @@ func main() {
 			DisplayName: userName,
 		}
 
-		authenticatorSelection := protocol.AuthenticatorSelection{
-			AuthenticatorAttachment: protocol.AuthenticatorAttachment(authenticatorAttachment),
-			UserVerification:        protocol.UserVerificationRequirement(userVerification),
+		authenticatorSelection := webauthn.AuthenticatorSelection{
+			AuthenticatorAttachment: webauthn.AuthenticatorAttachment(authenticatorAttachment),
+			UserVerification:        webauthn.UserVerificationRequirement(userVerification),
 			RequireResidentKey:      &requireResidentKeyBool,
 		}
 
 		options := webauthn.RegistrationInitializationRequestOptions{
 			AuthenticatorSelection: authenticatorSelection,
-			ConveyancePreference:   protocol.ConveyancePreference(conveyancePreference),
+			ConveyancePreference:   webauthn.ConveyancePreference(conveyancePreference),
 		}
 
 		request := webauthn.RegistrationInitializationRequest{User: user, Options: options}
@@ -93,8 +92,8 @@ func main() {
 		}
 
 		options := webauthn.AuthenticationInitializationRequestOptions{
-			UserVerification:        protocol.UserVerificationRequirement(userVerification),
-			AuthenticatorAttachment: protocol.AuthenticatorAttachment(authenticatorAttachment),
+			UserVerification:        webauthn.UserVerificationRequirement(userVerification),
+			AuthenticatorAttachment: webauthn.AuthenticatorAttachment(authenticatorAttachment),
 		}
 
 		request := &webauthn.AuthenticationInitializationRequest{User: user, Options: options}
