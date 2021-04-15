@@ -42,6 +42,12 @@
 {{>teaser-partial}}
 <form id="registration-form" onsubmit="app.initializeRegistration(event.preventDefault())">
     <table class="options">
+         <tr>
+            <th>User Name</th>
+            <td>
+                <input type="text" name="user_name"/>
+            </td>
+        </tr>
         <tr>
             <th>Authenticator Attachment</th>
             <td>
@@ -99,6 +105,12 @@
 {{>teaser-partial}}
 <form id="authentication-form" onsubmit="app.initializeAuthentication(event.preventDefault())">
     <table class="options">
+        <tr>
+            <th>User Name</th>
+            <td>
+                <input type="text" name="user_name"/>
+            </td>
+        </tr>
         <tr>
             <th>Authenticator Attachment</th>
             <td>

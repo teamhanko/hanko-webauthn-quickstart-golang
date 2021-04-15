@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
+	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/teamhanko/hanko-sdk-golang/client"
 	"github.com/teamhanko/hanko-sdk-golang/webauthn"
@@ -12,14 +13,11 @@ import (
 )
 
 var apiClient *webauthn.Client
-var userId string
-var userName string
+var userStore = make(map[string]string)
 
 func init() {
 	apiClient = webauthn.NewClient(config.C.ApiUrl, config.C.ApiSecret, client.WithHmac(config.C.ApiKeyId),
 		client.WithLogLevel(log.DebugLevel))
-	userId = config.C.UserName
-	userName = config.C.UserName
 }
 
 func main() {
@@ -29,17 +27,23 @@ func main() {
 	r.StaticFile("/", "./index.html")
 
 	r.POST("/registration_initialize", func(c *gin.Context) {
+		userName := c.Query("user_name")
 		authenticatorAttachment := c.Query("authenticator_attachment")
 		userVerification := c.Query("user_verification")
 		conveyancePreference := c.Query("conveyance_preference")
 		requireResidentKeyStr := c.Query("require_resident_key")
 		requireResidentKeyBool, _ := strconv.ParseBool(requireResidentKeyStr)
 
-		user := client.User{
-			ID:          userId,
-			Name:        userName,
-			DisplayName: userName,
+		var userId string
+
+		if userName != "" {
+			if userStore[userName] == "" {
+				userStore[userName] = uuid.NewV4().String()
+			}
+			userId = userStore[userName]
 		}
+
+		user := client.User{ID: userId, Name: userName, DisplayName: userName}
 
 		authenticatorSelection := webauthn.AuthenticatorSelection{
 			AuthenticatorAttachment: webauthn.AuthenticatorAttachment(authenticatorAttachment),
@@ -82,14 +86,12 @@ func main() {
 	})
 
 	r.POST("/authentication_initialize", func(c *gin.Context) {
+		userName := c.Query("user_name")
 		authenticatorAttachment := c.Query("authenticator_attachment")
 		userVerification := c.Query("user_verification")
 
-		user := client.User{
-			ID:          userId,
-			Name:        userName,
-			DisplayName: userName,
-		}
+		userId := userStore[userName]
+		user := client.User{ID: userId, Name: userName}
 
 		options := webauthn.AuthenticationInitializationRequestOptions{
 			UserVerification:        webauthn.UserVerificationRequirement(userVerification),
@@ -139,9 +141,7 @@ func main() {
 	})
 
 	r.GET("/credentials", func(c *gin.Context) {
-		request := &webauthn.CredentialQuery{UserId: userId}
-
-		response, apiErr := apiClient.ListCredentials(request)
+		response, apiErr := apiClient.ListCredentials(nil)
 		if apiErr != nil {
 			c.JSON(apiErr.StatusCode, gin.H{"error": apiErr.Error()})
 			return
