@@ -81,7 +81,7 @@
                 .then(credential => win.app._finalizeRequest(url, credential, response => {
                     win.app.elements["finalize-response"].append(win.app._formatJson(response))
                     win.app.renderCredentials()
-                })).catch(win.app._showError)
+                })).catch(win.app._showWebauthnError)
         },
 
         // initializeAuthentication fetches the endpoint which invokes the authentication and displays the response
@@ -103,7 +103,7 @@
             webauthn.getCredentials(JSON.stringify(win.app.initializationResponse))
                 .then(credential => win.app._finalizeRequest(url, credential, response => {
                     win.app.elements["finalize-response"].append(win.app._formatJson(response))
-                })).catch(win.app._showError)
+                })).catch(win.app._showWebauthnError)
         },
 
         // _renderWebauthnDemoContainer renders the content of the upper part of the page
@@ -158,13 +158,13 @@
         _request: (endpoint, method, body, cb) => {
             fetch(endpoint, {method: method, headers: win.app.requestHeader, body: body}).then(response => {
                 if (response.status === 200) {
-                    response.json().then(cb).catch(win.app._showError)
+                    response.json().then(cb).catch(win.app._showServerError)
                 } else {
                     response.json()
-                        .then(response => win.app._showError(response.error))
-                        .catch(() => response.text().then(win.app._showError))
+                        .then(response => win.app._showServerError(response.error))
+                        .catch(win.app._showServerError)
                 }
-            }).catch(win.app._showError)
+            }).catch(win.app._showServerError)
         },
 
         // _referenceElements stores references of the element that are dynamically controlled
@@ -187,6 +187,12 @@
 
         // _showError shows the error to the user.
         _showError: error => win.app.elements["error-text"].innerText = error,
+
+        // _showServerError shows the server error to the user.
+        _showServerError: error => win.app._showError("server error: " + error),
+
+        // _showWebauthnError shows the webauthn api error to the user.
+        _showWebauthnError: error => win.app._showError("webauthn api error: " + error),
 
         // _onDocumentReady calls fn when document has been loaded
         _onDocumentReady: fn => {
