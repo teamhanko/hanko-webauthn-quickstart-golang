@@ -1,4 +1,4 @@
-(function (win, webauthn, mustache, jsonViewer) {
+(function (win, hankoWebAuthn, mustache, jsonViewer) {
     win.app = {
         // elements stores the dynamically controlled html elements
         elements: {},
@@ -77,7 +77,7 @@
         // finalization endpoint. displays the response in the ui (right side)
         finalizeRegistration: () => {
             const url = win.app.endpoints.finalize_registration
-            webauthn.createCredentials(JSON.stringify(win.app.initializationResponse))
+            hankoWebAuthn.create({publicKey: win.app.initializationResponse})
                 .then(credential => win.app._finalizeRequest(url, credential, response => {
                     win.app.elements["finalize-response"].append(win.app._formatJson(response))
                     win.app.renderCredentials()
@@ -100,7 +100,7 @@
         // finalization endpoint. displays the response in the ui (right side)
         finalizeAuthentication: () => {
             const url = win.app.endpoints.finalize_authentication
-            webauthn.getCredentials(JSON.stringify(win.app.initializationResponse))
+            hankoWebAuthn.get({publicKey: win.app.initializationResponse})
                 .then(credential => win.app._finalizeRequest(url, credential, response => {
                     win.app.elements["finalize-response"].append(win.app._formatJson(response))
                 })).catch(win.app._showWebauthnError)
@@ -203,4 +203,4 @@
             }
         }
     }
-})(window, new hankoWebAuthn.HankoWebAuthn(), Mustache, JSONViewer);
+})(window, hankoWebAuthn, Mustache, JSONViewer);
