@@ -77,7 +77,7 @@
         // finalization endpoint. displays the response in the ui (right side)
         finalizeRegistration: () => {
             const url = win.app.endpoints.finalize_registration
-            hankoWebAuthn.create({publicKey: win.app.initializationResponse})
+            hankoWebAuthn.create(win.app.initializationResponse)
                 .then(credential => win.app._finalizeRequest(url, credential, response => {
                     win.app.elements["finalize-response"].append(win.app._formatJson(response))
                     win.app.renderCredentials()
@@ -100,7 +100,7 @@
         // finalization endpoint. displays the response in the ui (right side)
         finalizeAuthentication: () => {
             const url = win.app.endpoints.finalize_authentication
-            hankoWebAuthn.get({publicKey: win.app.initializationResponse})
+            hankoWebAuthn.get(win.app.initializationResponse)
                 .then(credential => win.app._finalizeRequest(url, credential, response => {
                     win.app.elements["finalize-response"].append(win.app._formatJson(response))
                 })).catch(win.app._showWebauthnError)

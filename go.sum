@@ -221,6 +221,8 @@ github.com/subosito/gotenv v1.2.0 h1:Slr1R9HxAlEKefgq5jn9U+DnETlIUa6HfgEzj0g5d7s
 github.com/subosito/gotenv v1.2.0/go.mod h1:N0PQaV/YGNqwC0u51sEeR/aUtSLEXKX9iv69rRypqCw=
 github.com/teamhanko/hanko-sdk-golang v0.3.1-0.20210409073753-f2ca7f9a6c0d h1:Z1905eBVU88k37hu1NDN2pwF092zDUzCPdVug42Z4gI=
 github.com/teamhanko/hanko-sdk-golang v0.3.1-0.20210409073753-f2ca7f9a6c0d/go.mod h1:joULPHK8sg9ntf2A0fjKDULc0AMvIfM6MFkMwDn1bsU=
+github.com/teamhanko/hanko-sdk-golang v0.3.1-0.20210423093945-016c58b0af29 h1:JqcNyz90adcKfO26RVKRwFx+0chWrTDV/TXDIpP5cNY=
+github.com/teamhanko/hanko-sdk-golang v0.3.1-0.20210423093945-016c58b0af29/go.mod h1:joULPHK8sg9ntf2A0fjKDULc0AMvIfM6MFkMwDn1bsU=
 github.com/teamhanko/webauthn v0.0.0-20210210072018-4f94fd83a0e3 h1:8RKkZvCew/NJXVjgY1LfPcEL+vS4FO1JzLko6kzxcW0=
 github.com/teamhanko/webauthn v0.0.0-20210210072018-4f94fd83a0e3/go.mod h1:r8D2XRMcAh1a9OknzAvX12XVh2b3knERainTOOZw9jU=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
