@@ -5,7 +5,6 @@ import (
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
-	"github.com/teamhanko/hanko-sdk-golang/client"
 	"github.com/teamhanko/hanko-sdk-golang/webauthn"
 	"gitlab.com/hanko/hanko-test-app/config"
 	"net/http"
@@ -16,8 +15,8 @@ var apiClient *webauthn.Client
 var userStore = make(map[string]string)
 
 func init() {
-	apiClient = webauthn.NewClient(config.C.ApiUrl, config.C.ApiSecret, client.WithHmac(config.C.ApiKeyId),
-		client.WithLogLevel(log.DebugLevel))
+	apiClient = webauthn.NewClient(config.C.ApiUrl, config.C.ApiSecret).WithHmac(config.C.ApiKeyId).
+		WithLogLevel(log.DebugLevel)
 }
 
 func main() {
@@ -43,20 +42,16 @@ func main() {
 			userId = userStore[userName]
 		}
 
-		user := client.User{ID: userId, Name: userName, DisplayName: userName}
+		user := webauthn.NewRegistrationInitializationUser(userId, userName)
 
-		authenticatorSelection := webauthn.AuthenticatorSelection{
-			AuthenticatorAttachment: webauthn.AuthenticatorAttachment(authenticatorAttachment),
-			UserVerification:        webauthn.UserVerificationRequirement(userVerification),
-			RequireResidentKey:      &requireResidentKeyBool,
-		}
+		authenticatorSelection := webauthn.NewAuthenticatorSelection().
+			WithUserVerification(webauthn.UserVerificationRequirement(userVerification)).
+			WithAuthenticatorAttachment(webauthn.AuthenticatorAttachment(authenticatorAttachment)).
+			WithRequireResidentKey(requireResidentKeyBool)
 
-		options := webauthn.RegistrationInitializationRequestOptions{
-			AuthenticatorSelection: authenticatorSelection,
-			ConveyancePreference:   webauthn.ConveyancePreference(conveyancePreference),
-		}
-
-		request := webauthn.RegistrationInitializationRequest{User: user, Options: options}
+		request := webauthn.NewRegistrationInitializationRequest(user).
+			WithAuthenticatorSelection(authenticatorSelection).
+			WithConveyancePreference(webauthn.ConveyancePreference(conveyancePreference))
 
 		response, apiErr := apiClient.InitializeRegistration(&request)
 		if apiErr != nil {
@@ -91,14 +86,12 @@ func main() {
 		userVerification := c.Query("user_verification")
 
 		userId := userStore[userName]
-		user := client.User{ID: userId, Name: userName}
 
-		options := webauthn.AuthenticationInitializationRequestOptions{
-			UserVerification:        webauthn.UserVerificationRequirement(userVerification),
-			AuthenticatorAttachment: webauthn.AuthenticatorAttachment(authenticatorAttachment),
-		}
+		user := webauthn.NewAuthenticationInitializationUser(userId).WithName(userName)
 
-		request := &webauthn.AuthenticationInitializationRequest{User: user, Options: options}
+		request := webauthn.NewAuthenticationInitializationRequest(user).
+			WithUserVerification(webauthn.UserVerificationRequirement(userVerification)).
+			WithAuthenticatorAttachment(webauthn.AuthenticatorAttachment(authenticatorAttachment))
 
 		response, apiErr := apiClient.InitializeAuthentication(request)
 		if apiErr != nil {
