@@ -53,7 +53,7 @@ func main() {
 			WithAuthenticatorSelection(authenticatorSelection).
 			WithConveyancePreference(webauthn.ConveyancePreference(conveyancePreference))
 
-		response, apiErr := apiClient.InitializeRegistration(&request)
+		response, apiErr := apiClient.InitializeRegistration(request)
 		if apiErr != nil {
 			c.JSON(apiErr.StatusCode, gin.H{"error": apiErr.Error()})
 			return
