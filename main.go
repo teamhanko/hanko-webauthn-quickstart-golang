@@ -7,12 +7,13 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/teamhanko/hanko-sdk-golang/webauthn"
 	"gitlab.com/hanko/hanko-test-app/config"
+	"gitlab.com/hanko/hanko-test-app/models"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 var apiClient *webauthn.Client
-var userStore = make(map[string]string)
 
 func init() {
 	apiClient = webauthn.NewClient(config.C.ApiUrl, config.C.ApiSecret).WithHmac(config.C.ApiKeyId).
@@ -26,23 +27,34 @@ func main() {
 	r.StaticFile("/", "./index.html")
 
 	r.POST("/registration_initialize", func(c *gin.Context) {
-		userName := c.Query("user_name")
+		userName := strings.TrimSpace(c.Query("user_name"))
 		authenticatorAttachment := c.Query("authenticator_attachment")
 		userVerification := c.Query("user_verification")
 		conveyancePreference := c.Query("conveyance_preference")
 		requireResidentKeyStr := c.Query("require_resident_key")
 		requireResidentKeyBool, _ := strconv.ParseBool(requireResidentKeyStr)
 
-		var userId string
-
-		if userName != "" {
-			if userStore[userName] == "" {
-				userStore[userName] = uuid.NewV4().String()
-			}
-			userId = userStore[userName]
+		if userName == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "user name not provided"})
+			return
 		}
 
-		user := webauthn.NewRegistrationInitializationUser(userId, userName)
+		userModel, err := models.FindUserByName(userName)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		if userModel == nil {
+			userModel = models.NewUser(uuid.NewV4().String(), userName)
+			err = userModel.Save()
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+		}
+
+		user := webauthn.NewRegistrationInitializationUser(userModel.ID, userModel.Name)
 
 		authenticatorSelection := webauthn.NewAuthenticatorSelection().
 			WithUserVerification(webauthn.UserVerificationRequirement(userVerification)).
@@ -81,17 +93,24 @@ func main() {
 	})
 
 	r.POST("/authentication_initialize", func(c *gin.Context) {
-		userName := c.Query("user_name")
+		userName := strings.TrimSpace(c.Query("user_name"))
 		authenticatorAttachment := c.Query("authenticator_attachment")
 		userVerification := c.Query("user_verification")
 
-		userId := userStore[userName]
-
-		user := webauthn.NewAuthenticationInitializationUser(userId).WithName(userName)
-
-		request := webauthn.NewAuthenticationInitializationRequest(user).
+		request := webauthn.NewAuthenticationInitializationRequest().
 			WithUserVerification(webauthn.UserVerificationRequirement(userVerification)).
 			WithAuthenticatorAttachment(webauthn.AuthenticatorAttachment(authenticatorAttachment))
+
+		if userName != "" {
+			userModel, err := models.FindUserByName(userName)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			if userModel != nil {
+				request.WithUser(webauthn.NewAuthenticationInitializationUser(userModel.ID).WithName(userModel.Name))
+			}
+		}
 
 		response, apiErr := apiClient.InitializeAuthentication(request)
 		if apiErr != nil {
@@ -104,7 +123,6 @@ func main() {
 
 	r.POST("/authentication_finalize", func(c *gin.Context) {
 		request := &webauthn.AuthenticationFinalizationRequest{}
-
 		dec := json.NewDecoder(c.Request.Body)
 		err := dec.Decode(request)
 		if err != nil {
