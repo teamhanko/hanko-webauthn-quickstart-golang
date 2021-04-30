@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
@@ -75,9 +74,7 @@ func main() {
 	})
 
 	r.POST("/registration_finalize", func(c *gin.Context) {
-		request := &webauthn.RegistrationFinalizationRequest{}
-		dec := json.NewDecoder(c.Request.Body)
-		err := dec.Decode(request)
+		request, err := webauthn.ParseRegistrationFinalizationRequest(c.Request.Body)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -122,11 +119,9 @@ func main() {
 	})
 
 	r.POST("/authentication_finalize", func(c *gin.Context) {
-		request := &webauthn.AuthenticationFinalizationRequest{}
-		dec := json.NewDecoder(c.Request.Body)
-		err := dec.Decode(request)
+		request, err := webauthn.ParseAuthenticationFinalizationRequest(c.Request.Body)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
