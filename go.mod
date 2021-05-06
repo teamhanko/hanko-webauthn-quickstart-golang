@@ -9,5 +9,5 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/viper v1.7.0
-	github.com/teamhanko/hanko-sdk-golang v0.3.1-0.20210429084143-255f2dc210e1
+	github.com/teamhanko/hanko-sdk-golang v0.3.1-0.20210505120658-912567e47441
 )
