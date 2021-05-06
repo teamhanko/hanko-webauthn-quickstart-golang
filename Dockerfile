@@ -8,9 +8,11 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o /go/bin/hanko-webauthn-quickstart
 
 FROM alpine:latest
+RUN mkdir /app
+WORKDIR /app
 RUN apk --no-cache add ca-certificates
 COPY --from=builder /go/bin/hanko-webauthn-quickstart .
-COPY templates ./templates
+COPY index.html .
 COPY assets ./assets
 COPY config ./config
 CMD ["./hanko-webauthn-quickstart"]
