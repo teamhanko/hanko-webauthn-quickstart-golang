@@ -105,7 +105,7 @@ func main() {
 				return
 			}
 			if userModel != nil {
-				request.WithUser(webauthn.NewAuthenticationInitializationUser(userModel.ID).WithName(userModel.Name))
+				request.WithUser(webauthn.NewAuthenticationInitializationUser(userModel.ID))
 			}
 		}
 
